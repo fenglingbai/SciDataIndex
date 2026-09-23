@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  
+<script>
+  const pathParts = location.pathname.split("/");
+  const base = pathParts[1] === "scidataindex"
+    ? "/scidataindex/"
+    : "/";
+  document.write(`<base href="${base}">`);
+</script>
+<meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SciDataIndex · 评价说明</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap");
+
+    :root {
+      --bg-0: #02061a;
+      --bg-1: #061338;
+      --bg-2: #0a1f4f;
+      --accent: #2ee6c9;
+      --glow: #6bdcff;
+      --text-0: #e9f2ff;
+      --text-1: #b6c7e6;
+      --card: rgba(12, 27, 69, 0.7);
+      --stroke: rgba(255, 255, 255, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Sora", "HarmonyOS Sans SC", "PingFang SC", sans-serif;
+      color: var(--text-0);
+      background: radial-gradient(900px 450px at 20% 20%, #183ea4 0%, transparent 60%),
+        radial-gradient(900px 520px at 80% 20%, #0c1a45 0%, transparent 70%),
+        linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 50%, var(--bg-0) 100%);
+      min-height: 100vh;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      background: rgba(3, 9, 32, 0.7);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 18px;
+    }
+
+    .nav-links a.active {
+      color: var(--glow);
+      font-weight: 600;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--glow);
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #6bf6ff, #1aa7ff 60%, #0a3476 100%);
+      box-shadow: 0 0 18px rgba(83, 211, 255, 0.4);
+    }
+
+    .nav a {
+      color: #b6c7e6;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .nav-action {
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(107, 220, 255, 0.4);
+      color: var(--glow) !important;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+
+    .nav-action:hover {
+      background: rgba(107, 220, 255, 0.15);
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      margin: 0 0 10px;
+      font-size: clamp(26px, 4vw, 38px);
+    }
+
+    .header p {
+      margin: 0;
+      color: var(--text-1);
+    }
+
+    .header.secondary {
+      margin-top: 60px;
+    }
+
+    .section {
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      padding: 22px 22px 18px;
+      box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 18px;
+      color: var(--accent);
+    }
+
+    .section-tag {
+      background: rgba(46, 230, 201, 0.12);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    .section-body {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .info-block {
+      display: grid;
+      gap: 10px;
+      color: var(--text-1);
+      line-height: 1.7;
+      font-size: 13px;
+      background: rgba(6, 19, 56, 0.6);
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .info-block strong {
+      color: var(--text-0);
+      font-weight: 600;
+    }
+
+    .metric-panel {
+      background: rgba(6, 19, 56, 0.6);
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .metric-title {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: var(--text-1);
+      font-weight: 600;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 10px;
+      font-size: 13px;
+    }
+
+    .score-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: rgba(46, 230, 201, 0.06);
+      border: 1px solid var(--stroke);
+      border-radius: 10px;
+    }
+
+    .score-item span {
+      color: var(--text-1);
+    }
+
+    .score-item b {
+      color: var(--text-0);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .summary-card {
+      background: rgba(6, 19, 56, 0.6);
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .summary-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: var(--accent);
+    }
+
+    .formula {
+      font-family: "Sora", "HarmonyOS Sans SC", "PingFang SC", sans-serif;
+      font-size: 13px;
+      color: var(--text-0);
+      background: rgba(46, 230, 201, 0.06);
+      border-radius: 10px;
+      padding: 12px 14px;
+      border: 1px dashed rgba(46, 230, 201, 0.35);
+    }
+
+    .roadmap {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .roadmap-figure {
+      width: 100%;
+      margin: 18px 0 22px;
+    }
+
+    .roadmap-figure img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid var(--stroke);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .milestone-list {
+      list-style: none;
+      padding: 0;
+      margin: 3px 0 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .milestone-item {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 10px;
+      align-items: start;
+      font-size: 13px;
+      color: var(--text-1);
+      line-height: 1.7;
+      padding: 10px 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+    }
+
+    .milestone-item:last-child {
+      border-bottom: none;
+    }
+
+    .milestone-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6bdcff, #2ee6c9);
+      margin-top: 6px;
+      box-shadow: 0 0 8px rgba(46, 230, 201, 0.35);
+    }
+
+    .milestone-item strong {
+      color: var(--text-0);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 980px) {
+      .section-body,
+      .summary-grid,
+      .roadmap {
+        grid-template-columns: 1fr;
+      }
+
+      .score-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-left">
+      <div class="brand">
+        <span style="position:relative;display:inline-block;">SciDataIndex<img src="images/opencompass.svg" alt="OpenCompass" style="position:absolute;top:-8px;right:0;height:11px;width:auto;opacity:0.85;"></span>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="data_ranks/earth_science.html">数据榜单</a>
+        <a href="dataset_list.html">数据列表</a>
+        <a href="task_search.html">任务检索</a>
+        <a href="compare.html">数据量衡</a>
+        <a href="evaluation.html" class="active">技术说明</a>
+        <a href="about.html">关于我们</a>
+      </nav>
+    </div>
+    <a class="nav-action" href="index_en.html">EN</a>
+  </header>
+
+  <main class="container">
+    <div class="header">
+      <h1>技术简介</h1>
+      <p>技术路线图与简要说明</p>
+    </div>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>技术路线</h2>
+        <span class="section-tag">Roadmap</span>
+      </div>
+      <div class="roadmap-figure">
+        <img src="images/technical_approach.png" alt="技术路线图" />
+      </div>
+      <div class="info-block">
+        <div><strong>路线说明：</strong>SciDataIndex 采用“广域发现—智能评价—任务驱动应用”三阶段技术路线。系统首先通过跨学科广域搜索获取潜在科学数据线索，并结合科研需求筛选高质量数据资源；随后基于多维指标对数据集进行分类分级与综合评估，构建统一的数据知识库；最终通过意图解析与任务匹配技术，实现面向科学问题的数据整合与智能推荐，为科研分析与模型建模提供精准数据支撑。</div>
+      </div>
+    </section>
+
+    <div class="header secondary">
+      <h1>评价说明</h1>
+      <p>六大评分维度与综合得分的评估方式</p>
+    </div>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>开放性</h2>
+        <span class="section-tag">维度 1</span>
+      </div>
+      <div class="section-body">
+        <div class="info-block">
+          <div><strong>维度释义：</strong>开放性维度用于衡量数据集在法律与许可层面的开放程度，反映数据在共享、复用及再分发过程中的自由度与限制强度。该维度以数据集所采用的许可证类型作为主要评价依据，不同许可证根据其对商业使用、二次分发及衍生作品的限制程度被映射为相应的量化评分。</div>
+          <div><strong>评估目标：</strong>衡量数据集在法律与许可层面的开放程度，反映数据可被共享、复用和再分发的自由度。</div>
+          <div><strong>评分依据：</strong>数据集采用的许可证类型。</div>
+        </div>
+        <div class="metric-panel">
+          <div class="metric-title">License Type — Score</div>
+          <div class="score-grid">
+            <div class="score-item"><span>PDLL</span><b>10</b></div>
+            <div class="score-item"><span>CC0</span><b>9</b></div>
+            <div class="score-item"><span>CC BY / CC BY 4.0</span><b>8</b></div>
+            <div class="score-item"><span>CC BY-SA</span><b>7</b></div>
+            <div class="score-item"><span>ODbL</span><b>6</b></div>
+            <div class="score-item"><span>CC BY-NC</span><b>5</b></div>
+            <div class="score-item"><span>CC BY-NC-SA</span><b>4</b></div>
+            <div class="score-item"><span>CC BY-ND</span><b>3</b></div>
+            <div class="score-item"><span>CC BY-NC-ND</span><b>2</b></div>
+            <div class="score-item"><span>未知/其他</span><b>0</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>数据质量</h2>
+        <span class="section-tag">维度 2</span>
+      </div>
+      <div class="section-body">
+        <div class="info-block">
+          <div><strong>维度释义：</strong>数据质量维度用于近似衡量数据集的时效性与维护状态。考虑到开放网络环境中直接评估数据内容质量的难度，该维度以数据集最近一次更新的时间信息作为代理指标，通过更新时间的年份反映数据集是否处于持续维护或长期停滞状态。</div>
+          <div><strong>评估目标：</strong>通过数据最近一次更新时间，近似衡量数据的时效性与维护状态。</div>
+          <div><strong>评分依据：</strong>数据最后更新时间的年份。</div>
+        </div>
+        <div class="metric-panel">
+          <div class="metric-title">Last Update Year — Score</div>
+          <div class="score-grid">
+            <div class="score-item"><span>&gt;=2025</span><b>10</b></div>
+            <div class="score-item"><span>2020-2024</span><b>9</b></div>
+            <div class="score-item"><span>2015-2019</span><b>8</b></div>
+            <div class="score-item"><span>2010-2014</span><b>7</b></div>
+            <div class="score-item"><span>2005-2009</span><b>6</b></div>
+            <div class="score-item"><span>2000-2004</span><b>5</b></div>
+            <div class="score-item"><span>1995-1999</span><b>4</b></div>
+            <div class="score-item"><span>1990-1994</span><b>3</b></div>
+            <div class="score-item"><span>1985-1989</span><b>2</b></div>
+            <div class="score-item"><span>1980-1984</span><b>1</b></div>
+            <div class="score-item"><span>未提供</span><b>0</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>数据规模</h2>
+        <span class="section-tag">维度 3</span>
+      </div>
+      <div class="section-body">
+        <div class="info-block">
+          <div><strong>维度释义：</strong>数据规模维度用于衡量数据集在体量上的规模优势，体现其在支持统计分析、大模型训练及复杂任务建模中的潜在价值。该维度以数据体量（以 MB 为单位）的数量级作为评分依据，通过数量级映射方式反映数据规模的相对大小。</div>
+          <div><strong>评估目标：</strong>衡量数据集在体量上的规模优势，反映其对大模型训练与统计分析的潜在价值。</div>
+          <div><strong>评分依据：</strong>数据体量的数量级。</div>
+        </div>
+        <div class="metric-panel">
+          <div class="metric-title">Data Volume(MB) — Score</div>
+          <div class="score-grid">
+            <div class="score-item"><span>&gt;= TB级</span><b>6-10</b></div>
+            <div class="score-item"><span>100-999GB</span><b>5</b></div>
+            <div class="score-item"><span>10-99GB</span><b>4</b></div>
+            <div class="score-item"><span>1-9GB</span><b>3</b></div>
+            <div class="score-item"><span>10-999MB</span><b>2</b></div>
+            <div class="score-item"><span>10-99MB</span><b>1</b></div>
+            <div class="score-item"><span>&lt;10MB</span><b>0</b></div>
+            <div class="score-item"><span>未提供</span><b>0</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>影响力</h2>
+        <span class="section-tag">维度 4</span>
+      </div>
+      <div class="section-body">
+        <div class="info-block">
+          <div><strong>维度释义：</strong>影响力维度用于刻画数据集在学术研究或实际应用场景中的使用广度与认可程度。该维度主要基于与数据集相关的学术论文数量进行评估，例如通过 Google Scholar 等文献索引平台统计数据集被引用或使用的研究工作数量，从而反映其在科研社区中的实际影响。</div>
+          <div><strong>评估目标：</strong>衡量数据集在学术界或应用场景中的实际使用和引用情况。</div>
+          <div><strong>评分依据：</strong>与该数据集相关的学术论文数量。</div>
+        </div>
+        <div class="metric-panel">
+          <div class="metric-title">Paper Count Digits — Score</div>
+          <div class="score-grid">
+            <div class="score-item"><span>&gt;=7 (≥1M)</span><b>10</b></div>
+            <div class="score-item"><span>6 (100k-999k)</span><b>8</b></div>
+            <div class="score-item"><span>5 (10k-99k)</span><b>6</b></div>
+            <div class="score-item"><span>4 (1k-9k)</span><b>4</b></div>
+            <div class="score-item"><span>3 (100-999)</span><b>2</b></div>
+            <div class="score-item"><span>&lt;=2 (&lt;100)</span><b>0</b></div>
+            <div class="score-item"><span>未提供</span><b>0</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>安全性</h2>
+        <span class="section-tag">维度 5</span>
+      </div>
+      <div class="section-body">
+        <div class="info-block">
+          <div><strong>维度释义：</strong>安全性维度用于评估数据集在访问控制与使用合规方面的安全治理水平。该维度由两部分构成：一是数据访问与使用的管控程度，用于反映数据是否存在访问限制或使用约束；二是数据使用的可追溯性，用于衡量数据在传播和使用过程中是否具备身份记录或责任追踪机制。两部分评分分别设定上限，并组合形成该维度的整体评分。</div>
+          <div><strong>评估目标：</strong>评估数据在访问控制与使用可追溯性方面的安全治理水平。</div>
+          <div><strong>评分依据：</strong>由管控程度和可追溯性两部分组成，其中管控程度最高6分，可追溯性最高4分。</div>
+        </div>
+        <div class="summary-grid">
+          <div class="metric-panel">
+            <div class="metric-title">Control Level — Score</div>
+            <div class="score-grid">
+              <div class="score-item"><span>部分管控</span><b>6</b></div>
+              <div class="score-item"><span>不受管控</span><b>3</b></div>
+              <div class="score-item"><span>未知</span><b>0</b></div>
+            </div>
+          </div>
+          <div class="metric-panel">
+            <div class="metric-title">Traceability — Score</div>
+            <div class="score-grid">
+              <div class="score-item"><span>有元数据</span><b>4</b></div>
+              <div class="score-item"><span>无元数据</span><b>1</b></div>
+              <div class="score-item"><span>未知</span><b>0</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>AI 就绪度</h2>
+        <span class="section-tag">维度 6</span>
+      </div>
+      <div class="section-body">
+        <div class="info-block">
+          <div><strong>维度释义：</strong>AI 就绪度维度用于衡量数据集在多大程度上能够被直接或以较低成本用于人工智能及大模型训练与推理任务。该维度综合考虑数据的标注知识密度、预处理程度以及文件格式的一致性，其中标注信息反映数据对监督或弱监督学习的支持能力，预处理程度反映数据清洗与规范化水平，文件格式一致性则体现数据在工程使用中的便利性。</div>
+          <div><strong>评估目标：</strong>衡量数据是否适合直接或低成本地用于 AI / 大模型训练与推理。</div>
+          <div><strong>评分依据：</strong>由标注知识密度、预处理程度和文件格式统一性组成，其中标注知识密度最高3分，预处理程度最高4分，文件格式统一性最高3分。</div>
+        </div>
+        <div class="summary-grid">
+          <div class="metric-panel">
+            <div class="metric-title">Annotation — Score</div>
+            <div class="score-grid">
+              <div class="score-item"><span>有标注</span><b>3</b></div>
+              <div class="score-item"><span>无标注</span><b>1</b></div>
+              <div class="score-item"><span>未知</span><b>0</b></div>
+            </div>
+          </div>
+          <div class="metric-panel">
+            <div class="metric-title">Preprocessing Level — Score</div>
+            <div class="score-grid">
+              <div class="score-item"><span>已预处理</span><b>4</b></div>
+              <div class="score-item"><span>已降噪处理</span><b>3</b></div>
+              <div class="score-item"><span>已标准化处理</span><b>2</b></div>
+              <div class="score-item"><span>未预处理</span><b>1</b></div>
+              <div class="score-item"><span>未知</span><b>0</b></div>
+            </div>
+          </div>
+          <div class="metric-panel">
+            <div class="metric-title">Format Consistency — Score</div>
+            <div class="score-grid">
+              <div class="score-item"><span>格式统一</span><b>3</b></div>
+              <div class="score-item"><span>格式不统一</span><b>1</b></div>
+              <div class="score-item"><span>未知</span><b>0</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>综合得分</h2>
+        <span class="section-tag">权重汇总</span>
+      </div>
+      <div class="section-body">
+        <div class="info-block">
+          <div><strong>评分说明：</strong>综合评分体系用于刻画科学数据在科研应用与智能建模场景中的综合价值，
+                                        从数据规模、学术影响力、AI 就绪度、开放性、数据质量与安全性六个维度进行评估，
+                                        反映数据在可用性、研究价值与智能应用潜力方面的整体水平。</div>
+          <div><strong>权重配置：</strong>权重设置综合参考典型科研场景需求与专家经验评估结果确定。
+                                        数据规模、学术影响力与 AI 就绪度作为核心指标，
+                                        重点体现数据对模型性能与科研产出的直接支撑能力；
+                                        开放性、数据质量与安全性作为基础保障指标，
+                                        用于刻画数据的可复用性、维护状态与合规风险水平。</div>
+        </div>
+        <div class="summary-grid">
+          <div class="metric-panel">
+            <div class="metric-title">Dimension — Weight</div>
+            <div class="score-grid">
+              <div class="score-item"><span>开放性</span><b>0.10</b></div>
+              <div class="score-item"><span>数据质量</span><b>0.10</b></div>
+              <div class="score-item"><span>数据规模</span><b>0.30</b></div>
+              <div class="score-item"><span>影响力</span><b>0.25</b></div>
+              <div class="score-item"><span>安全性</span><b>0.05</b></div>
+              <div class="score-item"><span>AI 就绪度</span><b>0.20</b></div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <h3>总评分公式</h3>
+            <div class="formula">
+              Total Score = 0.10 * Openness + 0.10 * Quality + 0.30 * Scale + 0.25 * Impact + 0.05 * Safety + 0.20 * AI Readiness
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+<script>
+  const pathParts = location.pathname.split("/");
+  const base = pathParts[1] === "scidataindex"
+    ? "/scidataindex/"
+    : "/";
+  document.write(`<base href="${base}">`);
+</script>
+<meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SciDataIndex</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap");
+
+    :root {
+      --bg-0: #02061a;
+      --bg-1: #040b2d;
+      --bg-2: #071a4d;
+      --glow: #53d3ff;
+      --accent: #2ee6c9;
+      --text-0: #e9f2ff;
+      --text-1: #b6c7e6;
+      --card: rgba(14, 33, 79, 0.58);
+      --stroke: rgba(255, 255, 255, 0.2);
+      --btn: #6bdcff;
+      --btn-dark: #23345e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Sora", "HarmonyOS Sans SC", "PingFang SC", sans-serif;
+      color: var(--text-0);
+      background: 
+        linear-gradient(180deg, rgba(3, 8, 22, 0.78) 0%, rgba(3, 8, 22, 0.55) 55%, rgba(3, 8, 22, 0.85) 100%),
+        url("images/main_background.png") center/cover no-repeat,
+        radial-gradient(1200px 500px at 10% 40%, #1d3b9b 0%, transparent 60%),
+        radial-gradient(1000px 600px at 70% 10%, #0d1640 0%, transparent 70%),
+        linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 40%, var(--bg-0) 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.35) 0 1px, transparent 2px),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.25) 0 1px, transparent 2px),
+        radial-gradient(circle at 40% 80%, rgba(255,255,255,0.2) 0 1px, transparent 2px);
+      opacity: 0.4;
+      mix-blend-mode: screen;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      position: sticky;
+      top: 0;
+      background: rgba(3, 9, 32, 0.7);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      font-size: 20px;
+      color: var(--glow);
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #6bf6ff, #1aa7ff 60%, #0a3476 100%);
+      box-shadow: 0 0 20px rgba(83, 211, 255, 0.55);
+      position: relative;
+    }
+
+    .brand-logo::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 26px;
+      font-size: 14px;
+      color: var(--text-1);
+    }
+
+    .nav-links a {
+      color: inherit;
+      text-decoration: none;
+      position: relative;
+      padding-bottom: 6px;
+    }
+
+    .nav-links a:hover::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .nav-links a.active {
+      color: var(--glow);
+      font-weight: 600;
+    }
+
+    .nav-links a.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .nav-action {
+      padding: 6px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      color: var(--text-0);
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 13px;
+    }
+
+    .hero {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 70px 24px 80px;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title {
+      font-size: clamp(36px, 6vw, 60px);
+      margin: 10px 0;
+      color: var(--glow);
+      font-weight: 700;
+      text-shadow: 0 0 20px rgba(46, 230, 201, 0.4);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(18px, 3vw, 28px);
+      font-weight: 600;
+      margin-bottom: 26px;
+    }
+
+    .hero-tabs {
+      display: inline-flex;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
+      margin-bottom: 24px;
+    }
+
+    .hero-tabs span {
+      padding: 10px 22px;
+      font-size: 13px;
+      color: var(--text-1);
+    }
+
+    .hero-tabs span.active {
+      background: rgba(93, 199, 255, 0.25);
+      color: var(--text-0);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-card {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 30px;
+      border-radius: 16px;
+      background: #0f214f;
+      background-image: none;
+      background-clip: padding-box;
+      overflow: hidden;
+      border: none;
+      box-shadow: none;
+      text-align: left;
+      line-height: 1.8;
+    }
+
+    .glass-card h3 {
+      text-align: center;
+      margin-top: 0;
+      font-size: 20px;
+      color: #cfe5ff;
+    }
+
+    .rank-section {
+      margin: 0;
+      padding: 70px 0 90px;
+      background: #ffffff;
+      color: #101827;
+      border-top: 1px solid #e3e8f3;
+    }
+
+    .rank-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+
+    .rank-title {
+      font-size: clamp(22px, 3vw, 30px);
+      margin: 0 0 10px;
+      font-weight: 700;
+      color: #111827;
+      text-align: center;
+    }
+
+    .rank-subtitle {
+      margin: 0 0 28px;
+      color: #5b6b89;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .rank-actions {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+
+    .rank-actions .btn.secondary {
+      color: #1f2a44;
+      background: #ffffff;
+      border: 1px solid #d7deea;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+    }
+
+    .rank-actions .btn.secondary:hover {
+      border-color: #6aa8ff;
+      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+    }
+
+    .rank-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    /* marquee mode: one row of three cards, auto-scroll right */
+    .rank-viewport {
+      overflow: hidden;
+      position: relative;
+    }
+    .rank-grid.is-marquee {
+      display: flex;
+      gap: 20px;
+      width: max-content;
+      animation: rankScroll 36s linear infinite;
+    }
+    .rank-grid.is-marquee:hover {
+      animation-play-state: paused;
+    }
+    .rank-grid.is-marquee .rank-card {
+      flex: none;
+      width: 320px;
+    }
+    @keyframes rankScroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* expand / collapse controls: plain text buttons */
+    .rank-toggle-bar {
+      margin-top: 18px;
+      text-align: center;
+    }
+    .rank-more-link,
+    .rank-collapse-btn {
+      background: none;
+      border: none;
+      color: #5b6b8c;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 4px 8px;
+      transition: color 0.2s;
+    }
+    .rank-more-link:hover,
+    .rank-collapse-btn:hover { color: #2b3a55; text-decoration: underline; }
+
+    .rank-card {
+      background: #ffffff;
+      border: 1px solid #dbe2ef;
+      border-radius: 14px;
+      overflow: hidden;
+      text-align: left;
+      box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .rank-card-header {
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #2c4a8a, #4167b7);
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .rank-card-header span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rank-list {
+      padding: 12px 0;
+    }
+
+    .rank-item {
+      display: grid;
+      grid-template-columns: 32px 1fr 72px;
+      gap: 10px;
+      padding: 12px 18px;
+      align-items: center;
+      border-top: 1px solid #edf1f7;
+    }
+
+    .rank-item:first-child {
+      border-top: none;
+    }
+
+    .rank-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1;
+      color: #1a2d4f;
+      background: linear-gradient(135deg, #bfe4ff, #7fe0f5);
+      justify-self: center;
+    }
+
+    .rank-badge .rank-medal {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .rank-badge.gold,
+    .rank-badge.silver,
+    .rank-badge.bronze {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: transparent;
+      box-shadow: none;
+      font-size: 28px;
+    }
+
+    .rank-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2a44;
+      text-decoration: none;
+      display: block;
+    }
+
+    .rank-score {
+      font-size: 16px;
+      font-weight: 700;
+      text-align: right;
+      color: #1f2a44;
+    }
+
+    .rank-score small {
+      display: block;
+      font-size: 11px;
+      color: #6b7c99;
+      font-weight: 400;
+    }
+
+    .rank-footer {
+      padding: 10px 18px 16px;
+      text-align: center;
+      border-top: 1px solid #edf1f7;
+    }
+
+    .rank-footer a {
+      color: #2c4a8a;
+      text-decoration: none;
+      font-size: 13px;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 26px;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 600;
+      text-decoration: none;
+      color: #021019;
+      background: linear-gradient(135deg, #baf4ff, var(--btn));
+      box-shadow: 0 10px 24px rgba(83, 211, 255, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    .btn.secondary {
+      color: var(--text-0);
+      background: linear-gradient(135deg, rgba(57, 74, 123, 0.8), rgba(23, 33, 73, 0.8));
+      border: 1px solid var(--stroke);
+      box-shadow: none;
+    }
+
+    .hero-actions .btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+      box-shadow: 0 14px 28px rgba(83, 211, 255, 0.4);
+    }
+
+    .earth-glow {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: 1200px;
+      height: 220px;
+      background: radial-gradient(circle at 50% 20%, rgba(98, 228, 255, 0.6), transparent 70%);
+      opacity: 0.65;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @media (max-width: 900px) {
+      .nav {
+        padding: 16px 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 14px;
+      }
+
+      .glass-card {
+        padding: 20px;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+      }
+
+      .rank-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+  <header class="nav">
+    <div class="nav-left">
+      <div class="brand">
+        <span style="position:relative;display:inline-block;">SciDataIndex<img src="images/opencompass.svg" alt="OpenCompass" style="position:absolute;top:-8px;right:0;height:11px;width:auto;opacity:0.85;"></span>
+      </div>
+      <nav class="nav-links">
+        <a href="index_en.html" class="active">Home</a>
+        <a href="data_ranks/earth_science.html">Rankings</a>
+        <a href="dataset_list.html">Dataset List</a>
+        <a href="task_search.html">Task Search</a>
+        <a href="compare.html">Comparison</a>
+        <a href="evaluation.html">Methodology</a>
+        <a href="about.html">About</a>
+      </nav>
+    </div>
+    <a class="nav-action" href="index.html">中文</a>
+  </header>
+
+  <main class="hero">
+    <!-- <div class="hero-tabs">
+      <span class="active">AI-Agent 数据评价体系</span>
+      <span>自主智能驱动科学发现</span>
+    </div> -->
+    <h1 class="hero-title">SciDataIndex</h1>
+    <div class="hero-subtitle">An AI4Science platform for scientific data classification, grading, and evaluation</div>
+
+    <section class="glass-card">
+      <h3>AI4Science Scientific Data Evaluation Framework</h3>
+      <p>
+        SciDataIndex is developed by the Shanghai AI Lab based on AI Agent technology.
+        It targets AI4Science scenarios and builds a global framework for scientific data signal mining,
+        classification, grading, and comprehensive evaluation.
+        The platform continuously aggregates multi-source scientific data resources
+        and performs quantitative assessment across openness, standardization, impact, and usability,
+        supporting discovery of high-value research data and interdisciplinary innovation.
+      </p>
+    </section>
+
+    <div class="hero-actions">
+      <a class="btn secondary" href="data_ranks/earth_science.html">Earth Science</a>
+      <a class="btn secondary" href="data_ranks/life_science.html">Life Science</a>
+      <a class="btn secondary" href="data_ranks/physical_science.html">Physical Science</a>
+      <a class="btn secondary" href="data_ranks/neuro_science.html">Neuroscience</a>
+    </div>
+    <div class="earth-glow"></div>
+  </main>
+
+    <section class="rank-section" id="rankSection">
+      <div class="rank-inner">
+        <h2 class="rank-title">Scientific Data Evaluation Rankings</h2>
+        <p class="rank-subtitle">Top 5 datasets by composite score across nine disciplines</p>
+        <div class="rank-viewport">
+          <div class="rank-grid" id="rankGrid"></div>
+        </div>
+        <div class="rank-toggle-bar" id="rankToggle"></div>
+      </div>
+    </section>
+
+  <script>
+    // Home rankings: dynamically load Top 5 of 9 disciplines (data from build_top60_index.py)
+    function toFileName(name) {
+      return `${name.replace(/\s+/g, "_").replace(/[\/]/g, "_")}_ratings1.json`;
+    }
+
+    function formatScore(value) {
+      if (!Number.isFinite(value)) return "-";
+      const text = value.toFixed(2);
+      return text.replace(/\.00$/, ".0").replace(/(\.\d)0$/, "$1");
+    }
+
+    const grid = document.getElementById("rankGrid");
+    const toggle = document.getElementById("rankToggle");
+    const subjectOrder = ["Earth Science", "Life Science", "Physical Science", "Chemistry", "Neuroscience",
+      "Materials Science", "Astronomy", "Computer Science", "General Science"];
+    // Map English display name -> key in home_rank_data.json (Chinese) + slug
+    const SUBJECT_MAP = {
+      "Earth Science":     { key: "地球科学",   icon: "🌍" },
+      "Life Science":      { key: "生命科学",   icon: "🧬" },
+      "Physical Science":  { key: "物质科学",   icon: "⚛️" },
+      "Chemistry":         { key: "化学科学",   icon: "🧪" },
+      "Neuroscience":      { key: "神经科学",   icon: "🧠" },
+      "Materials Science": { key: "材料科学",   icon: "🔩" },
+      "Astronomy":         { key: "天文科学",   icon: "🔭" },
+      "Computer Science":  { key: "计算机科学", icon: "💻" },
+      "General Science":   { key: "通识科学",   icon: "📚" }
+    };
+
+    // marquee mode: clone cards for seamless loop (translateX 0 -> -50%)
+    function enterMarquee() {
+      if (grid.dataset.cloned !== "1") {
+        grid.innerHTML += grid.innerHTML;
+        grid.dataset.cloned = "1";
+      }
+      grid.classList.add("is-marquee");
+      toggle.innerHTML = "";
+      const more = document.createElement("button");
+      more.className = "rank-more-link";
+      more.textContent = "More discipline rankings ▾";
+      more.addEventListener("click", exitMarquee);
+      toggle.appendChild(more);
+    }
+
+    // expanded mode: remove clones, back to 3-column grid
+    function exitMarquee() {
+      grid.classList.remove("is-marquee");
+      if (grid.dataset.cloned === "1") {
+        const cards = grid.querySelectorAll(".rank-card");
+        for (let i = cards.length - 1; i >= cards.length / 2; i--) cards[i].remove();
+        grid.dataset.cloned = "0";
+      }
+      toggle.innerHTML = "";
+      const collapse = document.createElement("button");
+      collapse.className = "rank-collapse-btn";
+      collapse.textContent = "Collapse rankings ▴";
+      collapse.addEventListener("click", enterMarquee);
+      toggle.appendChild(collapse);
+    }
+
+    async function renderRank() {
+      let homeData = null;
+      try {
+        const res = await fetch("home_rank_data.json");
+        if (res.ok) homeData = await res.json();
+      } catch (err) {
+        homeData = null;
+      }
+      if (!homeData) {
+        grid.innerHTML = "<p style=\"color:var(--text-1);\">Failed to load ranking data</p>";
+        return;
+      }
+
+      subjectOrder.forEach(subject => {
+        const meta = SUBJECT_MAP[subject];
+        const info = meta && homeData[meta.key];
+        if (!info || !info.top5 || !info.top5.length) return;
+        const items = [...info.top5].sort((a, b) => (b.total_score ?? 0) - (a.total_score ?? 0));
+        const card = document.createElement("div");
+        card.className = "rank-card";
+        const icon = meta.icon || "📊";
+        const subjectSlug = info.slug || "";
+        card.innerHTML = `
+          <div class="rank-card-header">
+            <span>${icon} ${subject} Rankings</span>
+            <span>Total</span>
+          </div>
+          <div class="rank-list"></div>
+          <div class="rank-footer">
+            <a href="data_ranks/${subjectSlug}.html">View full ranking →</a>
+          </div>
+        `;
+        const list = card.querySelector(".rank-list");
+        items.forEach((item, idx) => {
+          const fileName = item.file || toFileName(item.name);
+          const row = document.createElement("div");
+          row.className = "rank-item";
+          const badgeClass = idx === 0 ? "gold" : idx === 1 ? "silver" : idx === 2 ? "bronze" : "";
+          const medalIcon = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "";
+          row.innerHTML = `
+            <div class="rank-badge ${badgeClass}">
+              ${medalIcon || (idx + 1)}
+            </div>
+            <a class="rank-name" href="dataset_detail.html?name=${encodeURIComponent(item.name)}&file=${encodeURIComponent(fileName)}&category=${encodeURIComponent(subjectSlug)}">${item.name}</a>
+            <div class="rank-score">
+              ${formatScore(item.total_score)}
+              <small>Total</small>
+            </div>
+          `;
+          list.appendChild(row);
+        });
+        grid.appendChild(card);
+      });
+
+      // default: one-row marquee mode
+      enterMarquee();
+    }
+
+    renderRank();
+  </script>
+</body>
+</html>

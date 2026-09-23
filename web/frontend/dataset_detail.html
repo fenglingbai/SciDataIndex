@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  
+<script>
+  const pathParts = location.pathname.split("/");
+  const base = pathParts[1] === "scidataindex"
+    ? "/scidataindex/"
+    : "/";
+  document.write(`<base href="${base}">`);
+</script>
+<meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SciDataIndex · 数据集详情</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap");
+
+    :root {
+      --bg-0: #0c111f;
+      --bg-1: #121d3a;
+      --accent: #2ee6c9;
+      --glow: #6bdcff;
+      --text-0: #f0f4ff;
+      --text-1: #b7c6e6;
+      --card: rgba(15, 24, 46, 0.75);
+      --stroke: rgba(255, 255, 255, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Sora", "HarmonyOS Sans SC", "PingFang SC", sans-serif;
+      color: var(--text-0);
+      background: radial-gradient(900px 500px at 20% 20%, #1a3c92 0%, transparent 60%),
+        radial-gradient(900px 500px at 80% 20%, #0b1435 0%, transparent 70%),
+        linear-gradient(180deg, #0a1228 0%, #070c1a 100%);
+      min-height: 100vh;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(6, 12, 28, 0.7);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 18px;
+    }
+
+    .nav-links a.active {
+      color: var(--glow);
+      font-weight: 600;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--glow);
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #6bf6ff, #1aa7ff 60%, #0a3476 100%);
+      box-shadow: 0 0 18px rgba(83, 211, 255, 0.5);
+    }
+
+    .nav a {
+      color: var(--text-1);
+      text-decoration: none;
+      font-size: 14px;
+      margin-left: 16px;
+    }
+
+    .hero {
+      max-width: 1200px;
+      margin: 30px auto 20px;
+      padding: 24px;
+      border-radius: 18px;
+      background: linear-gradient(120deg, rgba(8, 16, 36, 0.8), rgba(6, 12, 30, 0.6)),
+        url("https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=1600&auto=format&fit=crop") center/cover;
+      border: 1px solid var(--stroke);
+      box-shadow: 0 24px 45px rgba(0, 0, 0, 0.45);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(7, 10, 24, 0.85), rgba(7, 10, 24, 0.2));
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(26px, 4vw, 40px);
+    }
+
+    .hero p {
+      margin: 0 0 18px;
+      color: var(--text-1);
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .meta-badge {
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--stroke);
+      font-size: 12px;
+      color: var(--text-1);
+    }
+
+    .status-badge {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-pending {
+      background: rgba(255, 193, 7, 0.18);
+      color: #b7791f;
+      border: 1px solid rgba(255, 193, 7, 0.4);
+    }
+
+    .status-verified {
+      background: rgba(46, 230, 201, 0.18);
+      color: #1c7f6b;
+      border: 1px solid rgba(46, 230, 201, 0.4);
+    }
+
+    .btn {
+      padding: 8px 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+      color: #061321;
+      background: linear-gradient(135deg, #baf4ff, var(--glow));
+    }
+
+    .btn.ghost {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-0);
+      border: 1px solid var(--stroke);
+    }
+
+    .content {
+      max-width: 1200px;
+      margin: 0 auto 80px;
+      padding: 0;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 22px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 18px;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-1);
+      padding: 10px 4px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab-btn.active {
+      color: var(--glow);
+      border-bottom-color: var(--glow);
+    }
+
+    .detail-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .detail-item {
+      padding: 16px 16px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .detail-item strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .detail-item span {
+      display: block;
+      color: var(--text-1);
+      font-size: 13px;
+      margin-top: 6px;
+      line-height: 1.6;
+      word-break: break-all;
+    }
+
+    .detail-item a.ext-link {
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      word-break: break-all;
+    }
+
+    .detail-item a.ext-link:hover {
+      text-decoration: underline;
+    }
+
+    /* 跳转确认弹窗 */
+    .jump-modal-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 8, 20, 0.66);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .jump-modal-mask.show {
+      display: flex;
+    }
+
+    .jump-modal {
+      width: min(480px, calc(100vw - 48px));
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 24px 24px 20px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .jump-modal h3 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .jump-modal p {
+      margin: 0 0 8px;
+      color: var(--text-1);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .jump-modal .jump-url {
+      display: block;
+      margin: 10px 0 18px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--accent);
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .jump-modal .jump-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .jump-modal button {
+      font-family: inherit;
+      font-size: 13px;
+      padding: 8px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--stroke);
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .jump-modal button:hover {
+      opacity: 0.85;
+    }
+
+    .jump-modal .btn-cancel {
+      background: transparent;
+      color: var(--text-1);
+    }
+
+    .jump-modal .btn-confirm {
+      background: var(--accent);
+      color: #06281f;
+      border-color: transparent;
+      font-weight: 600;
+    }
+
+    .radar-wrap {
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .fixed-panel {
+      height: 520px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .scroll-panel {
+      flex: 1;
+      overflow: auto;
+      padding-right: 6px;
+    }
+
+    .scroll-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .scroll-panel::-webkit-scrollbar-thumb {
+      background: rgba(107, 220, 255, 0.35);
+      border-radius: 999px;
+    }
+
+    .scroll-panel::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 999px;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 420px;
+      height: 380px;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .notice {
+      font-size: 13px;
+      color: var(--text-1);
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .content {
+        grid-template-columns: 1fr;
+        padding: 0 16px;
+      }
+
+      .hero {
+        margin: 20px 16px;
+      }
+
+      .fixed-panel {
+        height: auto;
+      }
+
+      .scroll-panel {
+        overflow: visible;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="jump-modal-mask" id="jumpModalMask">
+    <div class="jump-modal">
+      <h3>即将跳转到外部网站</h3>
+      <p>您即将离开 SciDataIndex，前往第三方数据集页面。该网站的内容与安全性由外部提供方负责，请留意甄别。</p>
+      <span class="jump-url" id="jumpModalUrl"></span>
+      <div class="jump-actions">
+        <button class="btn-cancel" id="jumpCancel">取消</button>
+        <button class="btn-confirm" id="jumpConfirm">确认前往</button>
+      </div>
+    </div>
+  </div>
+  <header class="nav">
+    <div class="nav-left">
+      <div class="brand">
+        <span style="position:relative;display:inline-block;">SciDataIndex<img src="images/opencompass.svg" alt="OpenCompass" style="position:absolute;top:-8px;right:0;height:11px;width:auto;opacity:0.85;"></span>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="data_ranks/earth_science.html">数据榜单</a>
+        <a href="dataset_list.html">数据列表</a>
+        <a href="task_search.html">任务检索</a>
+        <a href="compare.html">数据量衡</a>
+        <a href="evaluation.html">技术说明</a>
+        <a href="about.html">关于我们</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-content">
+      <h1 id="datasetTitle">数据集名称</h1>
+      <p id="datasetBrief">这里展示数据集简介。</p>
+      <div class="hero-actions">
+        <span class="meta-badge" id="tagCategory">所属类别</span>
+        <span class="status-badge status-pending" id="tagStatus" style="display: none;">挖掘中...</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="content">
+    <section class="card fixed-panel">
+      <h3>数据集信息</h3>
+      <div class="tab-bar" id="tabBar"></div>
+      <div class="scroll-panel">
+        <div class="detail-list" id="detailList"></div>
+      </div>
+    </section>
+
+    <section class="card radar-wrap fixed-panel">
+      <h3>综合评分雷达图</h3>
+      <div class="scroll-panel">
+        <canvas id="radarCanvas" width="420" height="380"></canvas>
+        <div class="notice" id="scoreNotice">评分维度：开放性 / 规模 / 影响力 / 安全性 / AI 就绪度 / 数据质量</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function toFileName(name) {
+      return `${name.replace(/ /g, "_").replace(/\s+/g, "_").replace(/[\\/]/g, "_")}_ratings1.json`;
+    }
+
+    function getParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    const datasetName = getParam("name") || "3D Turbulence DNS dataset";
+    const fileParam = getParam("file");
+    const categoryParam = getParam("category");
+    const aliasMapPath = "dataset_alias_map.json";
+    const scoreRoot = "score_json";
+
+    const detailList = document.getElementById("detailList");
+    const titleEl = document.getElementById("datasetTitle");
+    const briefEl = document.getElementById("datasetBrief");
+    const tagCategory = document.getElementById("tagCategory");
+    const tagStatus = document.getElementById("tagStatus");
+    const tabBar = document.getElementById("tabBar");
+
+    function normalizeDetailValue(content) {
+      if (content === null || content === undefined || content === "") return "待填写";
+      if (typeof content === "number" && Number.isNaN(content)) return "-";
+      if (typeof content === "string" && content.trim().toLowerCase() === "nan") return "-";
+      return content;
+    }
+
+    function isHttpUrl(v) {
+      return typeof v === "string" && /^https?:\/\//i.test(v.trim());
+    }
+
+    function addDetail(title, content, link) {
+      const safeContent = normalizeDetailValue(content);
+      const item = document.createElement("div");
+      item.className = "detail-item";
+      // 有超链接时只渲染链接本身，避免与内容文本重复显示同一 URL
+      const bodyHtml = link
+        ? `<span><a class="ext-link" data-url="${link}" rel="noreferrer">${link}</a></span>`
+        : `<span>${safeContent}</span>`;
+      item.innerHTML = `
+        <strong>${title}</strong>
+        ${bodyHtml}
+      `;
+      detailList.appendChild(item);
+    }
+
+    function getScore(data, key) {
+      console.log(key, data[key]);
+      // console.log("type:", typeof rating.openness, "value:", rating.openness);
+      // if (typeof rating[key] === "number") return rating[key];
+      // return null;
+      return typeof data[key] === "number" ? data[key] : null;
+    }
+
+    function drawRadar(scores) {
+      const canvas = document.getElementById("radarCanvas");
+      const ctx = canvas.getContext("2d");
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const cssWidth = canvas.getAttribute("width") ? Number(canvas.getAttribute("width")) : canvas.width;
+      const cssHeight = canvas.getAttribute("height") ? Number(canvas.getAttribute("height")) : canvas.height;
+      canvas.style.width = `${cssWidth}px`;
+      canvas.style.height = `${cssHeight}px`;
+      canvas.width = Math.round(cssWidth * dpr);
+      canvas.height = Math.round(cssHeight * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const labels = ["开放性", "规模", "影响力", "安全性", "AI就绪度", "数据质量"];
+      const maxValue = 10;
+      const centerX = cssWidth / 2;
+      const centerY = cssHeight / 2 + 10;
+      const radius = 140;
+      const levels = 5;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "rgba(255,255,255,0.2)";
+      ctx.lineWidth = 1;
+      for (let l = 1; l <= levels; l++) {
+        ctx.beginPath();
+        const r = (radius / levels) * l;
+        for (let i = 0; i < labels.length; i++) {
+          const angle = (Math.PI * 2 / labels.length) * i - Math.PI / 2;
+          const x = centerX + r * Math.cos(angle);
+          const y = centerY + r * Math.sin(angle);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#b6c7e6";
+      ctx.font = "13px Sora, sans-serif";
+      labels.forEach((label, i) => {
+        const angle = (Math.PI * 2 / labels.length) * i - Math.PI / 2;
+        const x = centerX + (radius + 18) * Math.cos(angle);
+        const y = centerY + (radius + 18) * Math.sin(angle);
+        ctx.fillText(label, x - 16, y + 4);
+      });
+
+      ctx.beginPath();
+      scores.forEach((score, i) => {
+        const ratio = Math.max(0, Math.min(maxValue, score)) / maxValue;
+        const angle = (Math.PI * 2 / labels.length) * i - Math.PI / 2;
+        const x = centerX + radius * ratio * Math.cos(angle);
+        const y = centerY + radius * ratio * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = "rgba(46, 230, 201, 0.35)";
+      ctx.fill();
+      ctx.strokeStyle = "#2ee6c9";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function renderTab(name, label, data) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tab-btn";
+      btn.textContent = label;
+      btn.dataset.tab = name;
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+        btn.classList.add("active");
+        detailList.innerHTML = "";
+        data();
+      });
+      tabBar.appendChild(btn);
+      return btn;
+    }
+
+    function buildTabs(data) {
+      tabBar.innerHTML = "";
+      detailList.innerHTML = "";
+
+      const aiTab = renderTab("ai", "AI 就绪度", () => {
+        addDetail("标注密度", data?.AI_readiness?.annotation_density);
+        addDetail("预处理程度", data?.AI_readiness?.preprocessing_level);
+        addDetail("格式一致性", data?.AI_readiness?.format_consistency);
+      });
+
+      renderTab("openness", "开放性", () => {
+        addDetail("许可证类型", data?.openness?.license_type);
+        addDetail("许可证来源链接", data?.openness?.license_source_link);
+        addDetail("收费模式", data?.openness?.charging_mode);
+        addDetail("访问限制", data?.openness?.access_restrictions);
+        addDetail("申请难度", data?.openness?.application_difficulty);
+      });
+
+      renderTab("scale", "数据集规模", () => {
+        addDetail("数据体量", data?.data_scale?.data_volume);
+        addDetail("数据体量来源", data?.data_scale?.source_of_data_volume);
+      });
+
+      renderTab("impact", "影响力", () => {
+        addDetail("引用与论文", data?.impact?.paper_link);
+          const relatedPapers = data?.impact?.google_scholar_related_papers;
+          const relatedPapersDisplay = Number.isFinite(Number(relatedPapers))
+            ? String(parseInt(relatedPapers, 10))
+            : relatedPapers;
+          addDetail("相关论文数", relatedPapersDisplay);
+      });
+
+      renderTab("safety", "安全性", () => {
+        addDetail("管控级别", data?.safety?.control_level);
+        addDetail("可追溯性", data?.safety?.traceability);
+      });
+
+      renderTab("quality", "数据质量", () => {
+        addDetail("完整性", data?.data_quality?.integrity);
+        addDetail("首次发布", data?.data_quality?.first_release_date);
+        addDetail("最近更新", data?.data_quality?.last_update_date);
+        const srcLink = data?.data_quality?.source_link;
+        const dlLink = data?.data_quality?.download_link;
+        addDetail("来源链接", srcLink, isHttpUrl(srcLink) ? srcLink : null);
+        addDetail("下载链接", dlLink, isHttpUrl(dlLink) ? dlLink : null);
+      });
+
+      aiTab.classList.add("active");
+      aiTab.click();
+    }
+
+    async function resolveDatasetName() {
+      try {
+        const res = await fetch(aliasMapPath);
+        if (!res.ok) return datasetName;
+        const map = await res.json();
+        if (map && map[datasetName]) return map[datasetName];
+        const keyLower = datasetName.toLowerCase();
+        for (const [alias, mapped] of Object.entries(map || {})) {
+          if (alias.toLowerCase() === keyLower) return mapped;
+        }
+        return datasetName;
+      } catch {
+        return datasetName;
+      }
+    }
+
+    async function loadScores(mappedName, fallbackName, categoryFromPath) {
+      const mappedFile = toFileName(mappedName).replace("_ratings1.json", "_scores.json");
+      const fallbackFile = toFileName(fallbackName).replace("_ratings1.json", "_scores.json");
+      //const candidates = [];
+      let path = null;
+
+      if (categoryFromPath) {
+        path = `${scoreRoot}/${categoryFromPath}/${mappedFile}`;
+        //candidates.push(`${scoreRoot}/${categoryFromPath}/${mappedFile}`);
+      //  if (fallbackFile !== mappedFile) {
+      //    candidates.push(`${scoreRoot}/${categoryFromPath}/${fallbackFile}`);
+      //  }
+      }
+
+      // candidates.push(`${scoreRoot}/${mappedFile}`);
+      // if (fallbackFile !== mappedFile) {
+      //   candidates.push(`${scoreRoot}/${fallbackFile}`);
+      // }
+
+      //["earth_science", "neuro_science", "life_science"].forEach(folder => {
+      //  candidates.push(`${scoreRoot}/${folder}/${mappedFile}`);
+      //  if (fallbackFile !== mappedFile) {
+      //    candidates.push(`${scoreRoot}/${folder}/${fallbackFile}`);
+      //  }
+      //});
+
+      //for (const path of candidates) {
+      console.log(`尝试加载评分数据文件: ${path}`);
+      const res = await fetch(path);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.scores) {
+          return data.scores;
+        }
+      }
+      //}
+      return null;
+    }
+
+    async function loadDataset() {
+      try {
+        const mappedName = await resolveDatasetName();
+        const mappedFile = toFileName(mappedName);
+        const fallbackFile = toFileName(datasetName);
+        // 候选文件名：优先用 URL 传入的精确 file（后端 mapping 的 web_file，与磁盘一致），
+        // 再回退到用映射名/原始名现拼（长名/含特殊字符时会与磁盘文件名不符）。去重保序。
+        const fileCandidates = [];
+        [fileParam, mappedFile, fallbackFile].forEach(f => {
+          if (f && !fileCandidates.includes(f)) fileCandidates.push(f);
+        });
+        const candidates = [];
+        if (categoryParam) {
+          fileCandidates.forEach(f => candidates.push(`data_json/${categoryParam}/${f}`));
+        }
+        console.log(`候选数据集路径:`, candidates);
+
+        let data = null;
+        let loadedPath = null;
+        for (const path of candidates) {
+          console.log(`尝试加载数据集文件: ${path}`);
+          const res = await fetch(path);
+          if (res.ok) {
+            data = await res.json();
+            loadedPath = path;
+            break;
+          }
+        }
+        if (!data) throw new Error("not found");
+
+        titleEl.textContent = data.dataset || datasetName;
+        briefEl.textContent = data.intro?.brief_description || "暂无简介";
+        let categoryFromPath = "";
+        if (loadedPath) {
+          if (loadedPath.includes("/earth_science/")) {
+            tagCategory.textContent = "地球科学";
+            categoryFromPath = "earth_science";
+          } else if (loadedPath.includes("/neuro_science/")) {
+            tagCategory.textContent = "神经科学";
+            categoryFromPath = "neuro_science";
+          } else if (loadedPath.includes("/life_science/")) {
+            tagCategory.textContent = "生命科学";
+            categoryFromPath = "life_science";
+          } else if (loadedPath.includes("/physical_science/")) {
+            tagCategory.textContent = "物质科学";
+            categoryFromPath = "physical_science";
+          } else if (loadedPath.includes("/material_science/")) {
+            tagCategory.textContent = "材料科学";
+            categoryFromPath = "material_science";
+          } else if (loadedPath.includes("/chemistry_science/")) {
+            tagCategory.textContent = "化学科学";
+            categoryFromPath = "chemistry_science";
+          } else if (loadedPath.includes("/astronomy_science/")) {
+            tagCategory.textContent = "天文科学";
+            categoryFromPath = "astronomy_science";
+          } else if (loadedPath.includes("/general_science/")) {
+            tagCategory.textContent = "通识科学";
+            categoryFromPath = "general_science";
+          } else if (loadedPath.includes("/computer_science/")) {
+            tagCategory.textContent = "计算机科学";
+            categoryFromPath = "computer_science";
+          }
+           else {
+            tagCategory.textContent = "所属类别未知";
+          }
+        } else {
+          tagCategory.textContent = "所属类别未知";
+        }
+
+        buildTabs(data);
+
+        const scoreData = await loadScores(mappedName, datasetName, categoryFromPath);
+        console.log("加载的评分数据对象:", scoreData);
+        if (scoreData) {
+          tagStatus.textContent = "已验证";
+          tagStatus.classList.remove("status-pending");
+          tagStatus.classList.add("status-verified");
+        } else {
+          tagStatus.textContent = "挖掘中...";
+          tagStatus.classList.remove("status-verified");
+          tagStatus.classList.add("status-pending");
+        }
+        tagStatus.style.display = "inline-flex";
+        const scoreSource = scoreData || data;
+        const scores = [
+          getScore(scoreSource, "openness"),
+          getScore(scoreSource, "scale"),
+          getScore(scoreSource, "impact"),
+          getScore(scoreSource, "safety"),
+          getScore(scoreSource, "ai_readiness"),
+          getScore(scoreSource, "quality")
+        ];
+        // console.log("加载的评分数据:", scores);
+        const safeScores = scores.map(score => (Number.isFinite(score) ? score : 0));
+        drawRadar(safeScores);
+      } catch (err) {
+        titleEl.textContent = "数据集文件未找到";
+        briefEl.textContent = "请确认 data_json 目录下存在对应的数据集 JSON 文件。";
+        buildTabs(null);
+        detailList.innerHTML = "";
+        addDetail("加载错误", "无法加载匹配的数据集文件，请检查映射表与文件路径。");
+        drawRadar([0, 0, 0, 0, 0, 0]);
+      }
+    }
+    
+    loadDataset();
+
+    // 外链跳转确认弹窗
+    const jumpMask = document.getElementById("jumpModalMask");
+    const jumpUrlEl = document.getElementById("jumpModalUrl");
+    let pendingUrl = null;
+
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest("a.ext-link");
+      if (!a) return;
+      e.preventDefault();
+      pendingUrl = a.dataset.url;
+      jumpUrlEl.textContent = pendingUrl;
+      jumpMask.classList.add("show");
+    });
+
+    document.getElementById("jumpCancel").addEventListener("click", () => {
+      pendingUrl = null;
+      jumpMask.classList.remove("show");
+    });
+
+    document.getElementById("jumpConfirm").addEventListener("click", () => {
+      if (pendingUrl) window.open(pendingUrl, "_blank", "noopener,noreferrer");
+      pendingUrl = null;
+      jumpMask.classList.remove("show");
+    });
+
+    jumpMask.addEventListener("click", (e) => {
+      if (e.target === jumpMask) {
+        pendingUrl = null;
+        jumpMask.classList.remove("show");
+      }
+    });
+  </script>
+</body>
+</html>

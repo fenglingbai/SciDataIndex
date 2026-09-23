@@ -1,0 +1,2642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+    const pathParts = location.pathname.split("/");
+    const base = pathParts[1] === "scidataindex" ? "/scidataindex/" : "/";
+    document.write(`<base href="${base}">`);
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SciDataIndex · 数据量衡</title>
+  <script src="lib/d3.v7.min.js"></script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap");
+
+    :root {
+      --bg-0: #02061a;
+      --bg-1: #061338;
+      --bg-2: #0a1f4f;
+      --accent: #2ee6c9;
+      --glow: #6bdcff;
+      --text-0: #e9f2ff;
+      --text-1: #b6c7e6;
+      --card: rgba(12, 27, 69, 0.7);
+      --stroke: rgba(255, 255, 255, 0.18);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: "Sora", "HarmonyOS Sans SC", "PingFang SC", sans-serif;
+      color: var(--text-0);
+      background:
+        radial-gradient(900px 450px at 20% 20%, #183ea4 0%, transparent 60%),
+        radial-gradient(900px 520px at 80% 20%, #0c1a45 0%, transparent 70%),
+        linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 50%, var(--bg-0) 100%);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 62px;
+      flex-shrink: 0;
+      background: rgba(3, 9, 32, 0.75);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      z-index: 10;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--glow);
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #6bf6ff, #1aa7ff 60%, #0a3476 100%);
+      box-shadow: 0 0 16px rgba(83, 211, 255, 0.5);
+      flex-shrink: 0;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: var(--text-1);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--text-0); }
+    .nav-links a.active { color: var(--glow); font-weight: 600; }
+
+    /* ── Two-column layout ── */
+    .layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(3, 8, 26, 0.55);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-1);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+
+    .selected-counter {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--glow);
+      background: rgba(107, 220, 255, 0.1);
+      border: 1px solid rgba(107, 220, 255, 0.25);
+      border-radius: 999px;
+      padding: 2px 10px;
+      margin-bottom: 10px;
+    }
+
+    .sidebar-search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      padding: 7px 12px;
+    }
+
+    .sidebar-search svg {
+      flex-shrink: 0;
+      opacity: 0.5;
+    }
+
+    .sidebar-search input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-0);
+      width: 100%;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    .sidebar-search input::placeholder { color: rgba(182, 199, 230, 0.5); }
+
+    .category-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 0 20px;
+    }
+
+    .category-list::-webkit-scrollbar { width: 4px; }
+    .category-list::-webkit-scrollbar-thumb {
+      background: rgba(107, 220, 255, 0.25);
+      border-radius: 999px;
+    }
+    .category-list::-webkit-scrollbar-track { background: transparent; }
+
+    /* 侧栏两区各半高 */
+    .sidebar-section {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .sidebar-section + .sidebar-section {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      flex: none;
+      height: 50%;
+    }
+    #selectSection { height: 50%; flex: none; }
+    .candidate-header { padding-bottom: 8px; }
+
+    /* 检索候选区列表 */
+    .candidate-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .candidate-list::-webkit-scrollbar { width: 4px; }
+    .candidate-list::-webkit-scrollbar-thumb { background: rgba(107, 220, 255, 0.25); border-radius: 999px; }
+    .candidate-list::-webkit-scrollbar-track { background: transparent; }
+
+    .candidate-empty {
+      padding: 26px 14px;
+      text-align: center;
+      color: var(--text-1);
+      opacity: 0.45;
+      font-size: 12.5px;
+      line-height: 1.7;
+    }
+    .candidate-empty a { color: var(--accent); text-decoration: none; }
+    .candidate-empty a:hover { text-decoration: underline; }
+    .candidate-foot {
+      padding: 8px 12px;
+      text-align: center;
+      color: var(--text-1);
+      opacity: 0.4;
+      font-size: 11.5px;
+      flex: none;
+    }
+
+    .candidate-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .candidate-item .cand-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12.5px;
+      color: var(--text-1);
+      transition: color 0.15s;
+    }
+    .candidate-item.in-selected .cand-name { color: var(--glow); font-weight: 600; }
+    .candidate-item .cand-add,
+    .candidate-item .cand-remove {
+      flex: none;
+      width: 20px; height: 20px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      border: 1px solid rgba(107, 220, 255, 0.35);
+      background: transparent;
+      color: var(--glow);
+      font-size: 14px; line-height: 1; cursor: pointer; padding: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .candidate-item .cand-add:hover { background: rgba(107, 220, 255, 0.18); }
+    .candidate-item .cand-add.in-selected {
+      background: rgba(107, 220, 255, 0.2);
+      color: #fff;
+    }
+    .candidate-item .cand-remove {
+      border-color: rgba(255, 255, 255, 0.14);
+      color: var(--text-1);
+      font-size: 13px;
+      opacity: 0.6;
+    }
+    .candidate-item .cand-remove:hover { opacity: 1; color: #ff6b8a; border-color: rgba(255, 107, 138, 0.4); }
+
+
+    /* Category accordion */
+    .cat-item {}
+
+    .cat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 16px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--glow);
+      transition: background 0.15s;
+    }
+
+    .cat-header:hover { background: rgba(107, 220, 255, 0.06); }
+
+    .cat-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cat-count {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-1);
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 999px;
+      padding: 1px 7px;
+    }
+
+    .cat-arrow {
+      font-size: 10px;
+      color: var(--text-1);
+      transition: transform 0.2s ease;
+    }
+
+    .cat-item.open .cat-arrow { transform: rotate(90deg); }
+
+    .ds-list {
+      display: none;
+      padding-bottom: 2px;
+    }
+
+    .cat-item.open .ds-list { display: block; }
+
+    .ds-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px 6px 26px;
+      font-size: 12.5px;
+      color: var(--text-1);
+      transition: background 0.12s;
+    }
+
+    .ds-item:hover { background: rgba(255, 255, 255, 0.03); }
+
+    .ds-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: default;
+      transition: color 0.15s;
+    }
+
+    .ds-item.added .ds-name {
+      color: var(--accent);
+      font-weight: 600;
+      text-shadow: 0 0 8px rgba(46, 230, 201, 0.35);
+    }
+
+    .add-btn {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(107, 220, 255, 0.45);
+      background: transparent;
+      color: var(--glow);
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    .add-btn:hover:not(:disabled) {
+      background: rgba(107, 220, 255, 0.18);
+      border-color: var(--glow);
+    }
+
+    .add-btn.added {
+      border-color: var(--accent);
+      color: var(--accent);
+      font-size: 12px;
+      cursor: pointer;
+      opacity: 1;
+    }
+
+    .add-btn.added:hover {
+      background: rgba(46, 230, 201, 0.18);
+    }
+
+    .add-btn:disabled:not(.added) {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+
+    .loading-hint {
+      padding: 8px 26px;
+      font-size: 12px;
+      color: var(--text-1);
+      opacity: 0.5;
+    }
+
+    /* Search results flat list */
+    .search-results { display: none; }
+    .search-results.active {
+      display: block;
+    }
+
+    .search-results .sr-category {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-1);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      padding: 10px 16px 4px;
+      opacity: 0.6;
+    }
+
+    /* ── Main area ── */
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .main-header {
+      padding: 18px 32px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+    }
+
+    .main-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-0);
+      margin-bottom: 3px;
+    }
+
+    .main-header p {
+      font-size: 13px;
+      color: var(--text-1);
+    }
+
+    .max-warning {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #ffb347;
+      background: rgba(255, 179, 71, 0.1);
+      border: 1px solid rgba(255, 179, 71, 0.25);
+      border-radius: 999px;
+      padding: 3px 12px;
+      margin-top: 6px;
+    }
+
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .main-content::-webkit-scrollbar { width: 6px; }
+    .main-content::-webkit-scrollbar-thumb {
+      background: rgba(107, 220, 255, 0.25);
+      border-radius: 999px;
+    }
+    .main-content::-webkit-scrollbar-track { background: transparent; }
+
+    /* Empty state */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      min-height: 380px;
+      color: var(--text-1);
+      user-select: none;
+    }
+
+    .empty-icon {
+      font-size: 52px;
+      opacity: 0.3;
+      filter: grayscale(1);
+    }
+
+    .empty-state h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-0);
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      opacity: 0.4;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Three-pane grid: left radar spans 2 rows, right top = table, right bottom = analysis */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      grid-template-rows: auto 1fr;
+      gap: 20px;
+      align-items: stretch;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Radar card */
+    .radar-card {
+      padding: 22px 20px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      grid-row: 1 / span 2;
+    }
+
+    .radar-card h3 {
+      width: 100%;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-1);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      margin-bottom: 2px;
+    }
+
+    #compareCanvas {
+      width: 100%;
+      max-width: 420px;
+      height: auto;
+      display: block;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      padding: 5px 10px 5px 8px;
+      font-size: 13px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-name {
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-0);
+      text-decoration: none;
+    }
+
+    .legend-name:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .legend-remove {
+      background: transparent;
+      border: none;
+      color: var(--text-1);
+      cursor: pointer;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+      margin-left: 2px;
+      opacity: 0.5;
+      transition: opacity 0.15s, color 0.15s;
+      font-family: inherit;
+    }
+
+    .legend-remove:hover {
+      opacity: 1;
+      color: #ff6b8a;
+    }
+
+    .row-remove-cell {
+      text-align: center;
+      width: 40px;
+    }
+
+    .row-remove {
+      background: transparent;
+      border: none;
+      color: var(--text-1);
+      cursor: pointer;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+      opacity: 0.5;
+      transition: opacity 0.15s, color 0.15s;
+      font-family: inherit;
+    }
+
+    .row-remove:hover {
+      opacity: 1;
+      color: #ff6b8a;
+    }
+
+    /* 右列：评分表（固定 6 行高）+ 数据集分析（占据剩余高度，位置固定不随列表下移） */
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      height: 100%;
+      min-height: 0;
+      grid-row: 1 / span 2; /* 与左侧雷达图同高 */
+    }
+
+    /* Score table card：固定为表头 + 6 行的高度，超出内部滚动，这样下面的分析栏位置固定 */
+    .table-card {
+      overflow: hidden;
+      height: 300px;
+      flex: none;
+      overflow-y: auto;
+    }
+
+    .table-card::-webkit-scrollbar { width: 6px; }
+    .table-card::-webkit-scrollbar-thumb {
+      background: rgba(107, 220, 255, 0.25);
+      border-radius: 999px;
+    }
+    .table-card::-webkit-scrollbar-track { background: transparent; }
+
+    .table-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-1);
+      opacity: 0.45;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    /* ---- 数据集分析卡片 ---- */
+    .analysis-card {
+      padding: 18px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .analysis-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .analysis-head h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-1);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+
+    .deep-analysis-btn {
+      padding: 8px 20px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: linear-gradient(135deg, #baf4ff, var(--glow));
+      color: #021019;
+      font-weight: 600;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(107, 220, 255, 0.35);
+      transition: transform 0.15s, filter 0.15s, opacity 0.15s;
+    }
+
+    .deep-analysis-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    .deep-analysis-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .analysis-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .analysis-body::-webkit-scrollbar { width: 6px; }
+    .analysis-body::-webkit-scrollbar-thumb {
+      background: rgba(107, 220, 255, 0.25);
+      border-radius: 999px;
+    }
+    .analysis-body::-webkit-scrollbar-track { background: transparent; }
+
+    .analysis-placeholder {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-1);
+      opacity: 0.45;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    /* 进度条（复用检索页风格） */
+    .analysis-progress-wrap { position: relative; }
+    .task-progress {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      transition: max-height 0.3s ease;
+    }
+    .task-progress.collapsed { max-height: 0; overflow: hidden; }
+    .task-progress li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-1);
+      opacity: 0;
+      transform: translateY(-4px);
+      animation: progressIn 0.3s ease forwards;
+    }
+    @keyframes progressIn { to { opacity: 1; transform: none; } }
+    .task-progress li .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(107, 220, 255, 0.35);
+      flex-shrink: 0;
+    }
+    .task-progress li.active { color: var(--text-0); }
+    .task-progress li.active .dot {
+      background: var(--glow);
+      box-shadow: 0 0 8px var(--glow);
+      animation: pulseDot 1s ease-in-out infinite;
+    }
+    @keyframes pulseDot { 50% { opacity: 0.4; } }
+    .task-progress li.done { color: var(--text-1); opacity: 0.7; }
+    .task-progress li.done .dot { background: var(--accent); }
+    .task-progress-toggle {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      margin: 4px 0 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #9fb4db;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      user-select: none;
+    }
+    .task-progress-toggle.show { display: inline-flex; }
+    .task-progress-toggle .caret { display: inline-block; transition: transform 0.2s; font-size: 10px; }
+    .task-progress-toggle.expanded .caret { transform: rotate(90deg); }
+    .task-progress-toggle:hover { color: var(--text-0); }
+
+    /* 分析结果 tab */
+    .analysis-result { display: flex; flex-direction: column; gap: 12px; min-height: 0; flex: none; }
+    .analysis-panels { flex: none; }
+    .analysis-panel[data-panel="graph"] { flex: none; }
+    .analysis-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--stroke);
+      padding-bottom: 8px;
+    }
+    .analysis-tab {
+      background: transparent;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      color: var(--text-1);
+      font-size: 12px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .analysis-tab:hover { color: var(--text-0); border-color: var(--glow); }
+    .analysis-tab.active {
+      background: rgba(107, 220, 255, 0.15);
+      border-color: var(--glow);
+      color: var(--glow);
+      font-weight: 600;
+    }
+    .analysis-panel { font-size: 13px; color: var(--text-0); line-height: 1.7; }
+    .analysis-panel .panel-text { color: var(--text-1); }
+    .analysis-panel .panel-para {
+      margin: 0 0 10px;
+      text-indent: 2em;      /* 首行缩进两字符 */
+      line-height: 1.8;
+      color: var(--text-1);
+    }
+    .analysis-panel .panel-para:last-child { margin-bottom: 0; }
+    .analysis-panel .panel-loading { color: var(--text-1); opacity: 0.5; }
+    .analysis-panel .panel-subtitle {
+      font-size: 13px; font-weight: 600; color: var(--text-0);
+      margin: 10px 0 6px;
+    }
+    .analysis-panel .panel-list { margin: 0; padding-left: 20px; color: var(--text-1); }
+    .analysis-panel .panel-list li { margin-bottom: 4px; }
+    .panel-question { margin-bottom: 14px; }
+    .panel-question .q-text { color: var(--text-0); margin-bottom: 4px; line-height: 1.6; }
+    .panel-question .q-datasets {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-1);
+    }
+    .panel-question .q-ds-label { color: #9fb4db; font-size: 11.5px; }
+    .panel-question .q-ds-link {
+      display: inline-block;
+      max-width: 320px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+      padding: 2px 9px;
+      border-radius: 20px;
+      background: rgba(140, 235, 220, 0.12);
+      color: #8cebdc;
+      font-size: 11.5px;
+      text-decoration: none;
+      border: 1px solid rgba(140, 235, 220, 0.25);
+      transition: background 0.2s;
+    }
+    .panel-question .q-ds-link:hover { background: rgba(140, 235, 220, 0.25); }
+
+    /* 图谱容器：收窄居中，两侧留白便于鼠标滚轮滚动分析栏 */
+    .graph-wrap {
+      width: 92%;
+      max-width: 760px;
+      margin: 0 auto;
+      height: 460px;
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      background: rgba(4, 10, 28, 0.5);
+      overflow: hidden;
+      position: relative;
+    }
+    .graph-wrap svg { display: block; }
+
+    /* 图谱全屏：面板壳相对定位，全屏入口按钮浮于图谱右上角 */
+    .analysis-panel[data-panel="graph"] { position: relative; }
+    .graph-fs-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 8;
+      width: 30px;
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid rgba(107, 220, 255, 0.35);
+      background: rgba(12, 27, 69, 0.85);
+      color: var(--glow);
+      cursor: pointer;
+      transition: background 0.2s;
+      padding: 0;
+    }
+    .graph-fs-btn:hover { background: rgba(107, 220, 255, 0.18); }
+    .graph-fs-btn svg { width: 15px; height: 15px; display: block; }
+
+    /* 全屏弹窗 overlay */
+    .graph-fs-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(2, 6, 18, 0.92);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+      padding: 28px;
+    }
+    .graph-fs-overlay .graph-wrap {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      height: 100%;
+      flex: 1;
+    }
+    /* 全屏时退出按钮位置（仍在图谱右上角） */
+    .graph-fs-overlay .graph-fs-btn { top: 18px; right: 18px; }
+
+    .graph-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(6, 14, 36, 0.95);
+      border: 1px solid var(--stroke);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--text-0);
+      max-width: 260px;
+      display: none;
+      z-index: 10;
+      white-space: pre-line;
+    }
+
+    /* 图谱占位提示 */
+    .graph-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #9fb4db;
+      font-size: 13px;
+    }
+
+    /* 节点文字标签 */
+    .graph-node-label {
+      fill: var(--text-1);
+      font-size: 10px;
+      pointer-events: none;
+      text-anchor: middle;
+    }
+
+    /* 左上角返回/切换按钮 */
+    .graph-back-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 5;
+      padding: 4px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(107, 220, 255, 0.35);
+      background: rgba(12, 27, 69, 0.85);
+      color: var(--glow);
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-family: inherit;
+    }
+    .graph-back-btn:hover { background: rgba(107, 220, 255, 0.18); }
+
+    /* 图例（右下角） */
+    .graph-legend {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      z-index: 5;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(3, 9, 32, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      width: min(270px, calc(100% - 24px));
+      font-size: 11px;
+      color: var(--text-1);
+      line-height: 1.8;
+      pointer-events: none;
+    }
+    .graph-legend.is-toggleable { bottom: 42px; }
+    .graph-legend .lg-dot {
+      display: inline-block;
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+    .graph-legend .lg-line {
+      display: inline-block;
+      width: 16px; height: 0;
+      border-top: 2px solid rgba(107, 220, 255, 0.5);
+      margin-right: 6px;
+      vertical-align: 3px;
+    }
+    .graph-legend-toggle {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      z-index: 6;
+      padding: 4px 10px;
+      border: 1px solid rgba(107, 220, 255, 0.35);
+      border-radius: 16px;
+      background: rgba(12, 27, 69, 0.88);
+      color: var(--glow);
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .graph-legend-toggle:hover { background: rgba(107, 220, 255, 0.18); }
+
+    .score-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .score-table th {
+      padding: 12px 14px;
+      text-align: center;
+      background: rgba(10, 18, 50, 0.6);
+      color: var(--text-1);
+      font-weight: 400;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .score-table th:first-child { text-align: left; min-width: 140px; }
+
+    .score-table td {
+      padding: 10px 14px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-1);
+    }
+
+    .score-table tr:last-child td { border-bottom: none; }
+    .score-table td:first-child { text-align: left; }
+
+    .score-table .name-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .name-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .name-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 160px;
+      color: var(--text-0);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .name-text:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .total-score {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .score-val-high { color: #86efac; }
+    .score-val-mid  { color: #fde68a; }
+    .score-val-low  { color: #fca5a5; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 240px 1fr; }
+      .nav { padding: 0 20px; }
+      .main-content { padding: 16px; }
+    }
+
+    @media (max-width: 640px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-left">
+      <a class="brand" href="index.html">
+        <span style="position:relative;display:inline-block;">SciDataIndex<img src="images/opencompass.svg" alt="OpenCompass" style="position:absolute;top:-8px;right:0;height:11px;width:auto;opacity:0.85;"></span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="data_ranks/earth_science.html">数据榜单</a>
+        <a href="dataset_list.html">数据列表</a>
+        <a href="task_search.html">任务检索</a>
+        <a href="compare.html" class="active">数据量衡</a>
+        <a href="evaluation.html">技术说明</a>
+        <a href="about.html">关于我们</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+      <!-- 上半：数据集选择区 -->
+      <section class="sidebar-section" id="selectSection">
+        <div class="sidebar-header">
+          <div class="sidebar-title">数据集选择区</div>
+          <div class="selected-counter">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <circle cx="5" cy="5" r="4" stroke="#6bdcff" stroke-width="1.5"/>
+            </svg>
+            <span id="selectedCount">0</span> / 12 已选
+          </div>
+          <div class="sidebar-search">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="#b6c7e6" stroke-width="1.4"/>
+              <line x1="9.5" y1="9.5" x2="13" y2="13" stroke="#b6c7e6" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            <input id="sidebarSearch" type="search" placeholder="搜索数据集名称…" autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Normal accordion view -->
+        <div class="category-list" id="categoryList"></div>
+
+        <!-- Search results overlay（只覆盖数据集选择区） -->
+        <div class="category-list search-results" id="searchResults" style="position:absolute; left:0; right:0; top:0; bottom:0; background:rgba(3,8,26,0.97); padding-top:0;"></div>
+      </section>
+
+      <!-- 下半：检索候选区 -->
+      <section class="sidebar-section" id="candidateSection">
+        <div class="sidebar-header candidate-header">
+          <div class="sidebar-title">检索候选区</div>
+        </div>
+        <div class="candidate-list" id="candidateList"></div>
+      </section>
+    </aside>
+
+    <!-- ── Main ── -->
+    <main class="main">
+      <div class="main-header">
+        <h2>数据集横向对比</h2>
+        <p>从左侧选择数据集，雷达图将叠加展示各维度评分，最多同时对比 12 个</p>
+        <div class="max-warning" id="maxWarning" style="display:none;">
+          ⚠ 已达上限，请移除一个数据集后再添加
+        </div>
+      </div>
+      <div class="main-content" id="mainContent"></div>
+    </main>
+  </div>
+
+  <script>
+    const SUBJECTS = [
+      { label: "生命科学",   key: "life_science" },
+      { label: "地球科学",   key: "earth_science" },
+      { label: "材料科学",   key: "material_science" },
+      { label: "物质科学",   key: "physical_science" },
+      { label: "化学科学",   key: "chemistry_science" },
+      { label: "神经科学",   key: "neuro_science" },
+      { label: "天文科学",   key: "astronomy_science" },
+      { label: "通识科学",   key: "general_science" },
+      { label: "计算机科学", key: "computer_science" },
+    ];
+
+    const RADAR_LABELS = ["开放性", "规模", "影响力", "安全性", "AI就绪度", "数据质量"];
+    const SCORE_KEYS   = ["openness", "scale", "impact", "safety", "ai_readiness", "quality"];
+    const MAX_COMPARE  = 12;
+
+    const PALETTE = [
+      { stroke: "#2ee6c9", fill: "rgba(46,230,201,0.18)"   },
+      { stroke: "#6bdcff", fill: "rgba(107,220,255,0.18)"  },
+      { stroke: "#ff9f40", fill: "rgba(255,159,64,0.18)"   },
+      { stroke: "#ff6b8a", fill: "rgba(255,107,138,0.18)"  },
+      { stroke: "#a78bfa", fill: "rgba(167,139,250,0.18)"  },
+      { stroke: "#86efac", fill: "rgba(134,239,172,0.18)"  },
+      { stroke: "#f472b6", fill: "rgba(244,114,182,0.18)"  },
+      { stroke: "#facc15", fill: "rgba(250,204,21,0.18)"   },
+      { stroke: "#38bdf8", fill: "rgba(56,189,248,0.18)"   },
+      { stroke: "#fb923c", fill: "rgba(251,146,60,0.18)"   },
+      { stroke: "#4ade80", fill: "rgba(74,222,128,0.18)"   },
+      { stroke: "#e879f9", fill: "rgba(232,121,249,0.18)"  },
+    ];
+
+    // ── State ──────────────────────────────────────────────
+    let selected = [];                     // {name, catKey, scores, totalScore, colorIdx}
+    const freeColors = new Set([0,1,2,3,4,5,6,7,8,9,10,11]);
+    const catCache   = {};                 // catKey -> string[] (file names)
+    let   allDatasets = [];                // {name, catKey, catLabel}
+
+    // ── Helpers ────────────────────────────────────────────
+    function fileToName(fileName) {
+      return fileName.replace(/_ratings\d+\.json$/, "").replace(/_/g, " ");
+    }
+
+    function nameToScoreFile(name) {
+      return name.replace(/ /g, "_").replace(/[/\\]/g, "_") + "_scores.json";
+    }
+
+    function detailUrl(name, catKey) {
+      const fileName = name.replace(/ /g, "_").replace(/[/\\]/g, "_") + "_ratings1.json";
+      return `dataset_detail.html?name=${encodeURIComponent(name)}&file=${encodeURIComponent(fileName)}&category=${encodeURIComponent(catKey)}`;
+    }
+
+    async function tryFetch(url) {
+      try {
+        const r = await fetch(url);
+        if (!r.ok) return null;
+        return await r.json();
+      } catch { return null; }
+    }
+
+    async function fetchScore(catKey, name) {
+      const file = nameToScoreFile(name);
+      const base = `score_json/${catKey}/`;
+      const data = await tryFetch(base + file) || await tryFetch(base + encodeURIComponent(file));
+      if (!data) return null;
+      return data;
+    }
+
+    function scoreClass(v) {
+      if (v === null || v === undefined) return "";
+      if (v >= 7) return "score-val-high";
+      if (v >= 4) return "score-val-mid";
+      return "score-val-low";
+    }
+
+    // ── Sidebar ────────────────────────────────────────────
+    function buildSidebar() {
+      const container = document.getElementById("categoryList");
+      container.innerHTML = "";
+      SUBJECTS.forEach(subj => {
+        const item = document.createElement("div");
+        item.className = "cat-item";
+        item.innerHTML = `
+          <div class="cat-header">
+            <span class="cat-header-left">
+              <span>${subj.label}</span>
+              <span class="cat-count" id="cnt-${subj.key}">—</span>
+            </span>
+            <span class="cat-arrow">▶</span>
+          </div>
+          <div class="ds-list" id="list-${subj.key}">
+            <div class="loading-hint">点击展开后加载…</div>
+          </div>`;
+        item.querySelector(".cat-header").addEventListener("click", () => toggleCat(item, subj));
+        container.appendChild(item);
+      });
+    }
+
+    async function toggleCat(item, subj) {
+      const isOpen = item.classList.contains("open");
+      if (isOpen) { item.classList.remove("open"); return; }
+      item.classList.add("open");
+      if (!catCache[subj.key]) {
+        document.getElementById(`list-${subj.key}`).innerHTML =
+          '<div class="loading-hint">加载中…</div>';
+        await loadCat(subj);
+      }
+      renderCatList(subj.key);
+    }
+
+    async function loadCat(subj) {
+      try {
+        const r = await fetch(`data_json/${subj.key}/dataset_index.json`);
+        if (!r.ok) { catCache[subj.key] = []; return; }
+        const list = await r.json();
+        catCache[subj.key] = Array.isArray(list) ? list : [];
+      } catch { catCache[subj.key] = []; }
+
+      // Update count badge
+      const cnt = document.getElementById(`cnt-${subj.key}`);
+      if (cnt) cnt.textContent = catCache[subj.key].length;
+
+      // Add to global search pool (de-dup by name)
+      for (const fileName of catCache[subj.key]) {
+        const name = fileToName(fileName);
+        if (!allDatasets.find(d => d.name === name && d.catKey === subj.key)) {
+          allDatasets.push({ name, catKey: subj.key, catLabel: subj.label, file: fileName });
+        }
+      }
+    }
+
+    function renderCatList(catKey) {
+      const listEl = document.getElementById(`list-${catKey}`);
+      if (!listEl) return;
+      const files = catCache[catKey] || [];
+      if (files.length === 0) {
+        listEl.innerHTML = '<div class="loading-hint">暂无数据</div>'; return;
+      }
+      const maxReached = freeColors.size === 0;
+      listEl.innerHTML = "";
+      files.forEach(fileName => {
+        const name = fileToName(fileName);
+        const isAdded = selected.some(d => d.name === name && d.catKey === catKey);
+        const el = document.createElement("div");
+        el.className = "ds-item" + (isAdded ? " added" : "");
+        el.dataset.name = name;
+        el.dataset.cat = catKey;
+        el.innerHTML = `
+          <span class="ds-name" title="${name}">${name}</span>
+          <button class="add-btn ${isAdded ? "added" : ""}"
+                  ${(!isAdded && maxReached) ? "disabled" : ""}
+                  title="${isAdded ? "点击移出对比" : maxReached ? "已达上限" : "加入对比"}">
+            ${isAdded ? "✓" : "+"}
+          </button>`;
+        const btn = el.querySelector(".add-btn");
+        if (isAdded) {
+          btn.addEventListener("click", () => removeDataset(name, catKey));
+        } else if (!maxReached) {
+          btn.addEventListener("click", () => addDataset(name, catKey, fileName));
+        }
+        listEl.appendChild(el);
+      });
+    }
+
+    // ── Search ─────────────────────────────────────────────
+    function setupSearch() {
+      const input   = document.getElementById("sidebarSearch");
+      const catList = document.getElementById("categoryList");
+      const srList  = document.getElementById("searchResults");
+
+      // searchResults 只覆盖数据集选择区（定位父级 = #selectSection）
+      const selectSection = document.getElementById("selectSection");
+      selectSection.style.position = "relative";
+      srList.style.position = "absolute";
+      srList.style.left = "0";
+      srList.style.right = "0";
+      srList.style.bottom = "0";
+      srList.style.overflowY = "auto";
+
+      // Position searchResults below the 数据集选择区 header
+      function positionResults() {
+        const hdrH = selectSection.querySelector(".sidebar-header").offsetHeight;
+        srList.style.top = hdrH + "px";
+      }
+
+      input.addEventListener("input", () => {
+        positionResults();
+        const q = input.value.trim().toLowerCase();
+        if (!q) {
+          srList.classList.remove("active");
+          catList.style.visibility = "";
+          return;
+        }
+        catList.style.visibility = "hidden";
+        srList.classList.add("active");
+        renderSearchResults(q);
+      });
+    }
+
+    function renderSearchResults(q) {
+      const srList = document.getElementById("searchResults");
+      const maxReached = freeColors.size === 0;
+      const matches = allDatasets.filter(d => d.name.toLowerCase().includes(q));
+
+      if (matches.length === 0) {
+        srList.innerHTML = '<div class="loading-hint" style="padding:20px 16px;">未找到匹配的数据集</div>';
+
+        // Hint if some categories not loaded yet
+        const unloaded = SUBJECTS.filter(s => !catCache[s.key]);
+        if (unloaded.length > 0) {
+          srList.innerHTML += `<div class="loading-hint">部分分类尚未加载，仍在后台加载中…</div>`;
+        }
+        return;
+      }
+
+      // Group by category
+      const grouped = {};
+      matches.forEach(d => {
+        if (!grouped[d.catKey]) grouped[d.catKey] = { label: d.catLabel, items: [] };
+        grouped[d.catKey].items.push(d);
+      });
+
+      let html = "";
+      Object.values(grouped).forEach(g => {
+        html += `<div class="sr-category">${g.label}</div>`;
+        g.items.forEach(d => {
+          const isAdded = selected.some(s => s.name === d.name && s.catKey === d.catKey);
+          html += `
+            <div class="ds-item ${isAdded ? "added" : ""}" data-name="${d.name}" data-cat="${d.catKey}">
+              <span class="ds-name" title="${d.name}">${d.name}</span>
+              <button class="add-btn ${isAdded ? "added" : ""}"
+                      ${(!isAdded && maxReached) ? "disabled" : ""}>
+                ${isAdded ? "✓" : "+"}
+              </button>
+            </div>`;
+        });
+      });
+
+      srList.innerHTML = html;
+
+      srList.querySelectorAll(".add-btn:not([disabled])").forEach(btn => {
+        const item = btn.closest(".ds-item");
+        const name = item.dataset.name;
+        const catKey = item.dataset.cat;
+        const isAdded = selected.some(s => s.name === name && s.catKey === catKey);
+        if (isAdded) {
+          btn.addEventListener("click", () => removeDataset(name, catKey));
+        } else {
+          const found = allDatasets.find(d => d.name === name && d.catKey === catKey);
+          const fileName = found?.file || (name.replace(/ /g, "_") + "_ratings1.json");
+          btn.addEventListener("click", () => addDataset(name, catKey, fileName));
+        }
+      });
+    }
+
+    // ── 检索候选区（任务检索联动，localStorage 持久 + storage 事件同步） ──────────
+    const COMPARE_CAND_KEY = "scidataindex_compare_candidates";
+    function readCompareCandidates() {
+      try {
+        const raw = localStorage.getItem(COMPARE_CAND_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch { return []; }
+    }
+    function writeCompareCandidates(list) {
+      try { localStorage.setItem(COMPARE_CAND_KEY, JSON.stringify(list)); } catch {}
+    }
+    function removeCompareCandidate(name, catKey) {
+      writeCompareCandidates(readCompareCandidates().filter(c => !(c.name === name && c.catKey === catKey)));
+    }
+
+    function renderCandidates() {
+      const wrap = document.getElementById("candidateList");
+      if (!wrap) return;
+      const list = readCompareCandidates();
+      wrap.replaceChildren();
+      if (!list.length) {
+        const empty = document.createElement("div");
+        empty.className = "candidate-empty";
+        empty.innerHTML = `通过<a href="task_search.html" target="_blank" rel="noopener noreferrer">任务检索</a>添加数据集`;
+        wrap.appendChild(empty);
+        return;
+      }
+      list.forEach(c => {
+        const inSelected = selected.some(s => s.name === c.name && s.catKey === c.catKey);
+        const item = document.createElement("div");
+        item.className = "candidate-item" + (inSelected ? " in-selected" : "");
+
+        const name = document.createElement("span");
+        name.className = "cand-name";
+        name.title = c.name;
+        name.textContent = c.name;
+
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "cand-add" + (inSelected ? " in-selected" : "");
+        addBtn.title = inSelected ? "移出对比" : "加入对比";
+        addBtn.textContent = inSelected ? "✓" : "+";
+        addBtn.addEventListener("click", () => {
+          if (selected.some(s => s.name === c.name && s.catKey === c.catKey)) {
+            removeDataset(c.name, c.catKey);
+          } else {
+            addDataset(c.name, c.catKey, c.file || (c.name.replace(/ /g, "_") + "_ratings1.json"));
+          }
+        });
+
+        const rmBtn = document.createElement("button");
+        rmBtn.type = "button";
+        rmBtn.className = "cand-remove";
+        rmBtn.title = "从候选区移除";
+        rmBtn.textContent = "×";
+        rmBtn.addEventListener("click", () => {
+          removeCompareCandidate(c.name, c.catKey);
+          renderCandidates();
+        });
+
+        item.append(name, addBtn, rmBtn);
+        wrap.appendChild(item);
+      });
+      const foot = document.createElement("div");
+      foot.className = "candidate-foot";
+      foot.textContent = "通过刷新确认数据条目完整";
+      wrap.appendChild(foot);
+    }
+
+    // 其他窗口（任务检索页）写入候选时，实时刷新候选区
+    window.addEventListener("storage", (e) => {
+      if (e.key === COMPARE_CAND_KEY) renderCandidates();
+    });
+
+    // ── Compare logic ──────────────────────────────────────
+    async function addDataset(name, catKey, fileName) {
+      if (selected.length >= MAX_COMPARE) return;
+      if (selected.some(d => d.name === name && d.catKey === catKey)) return;
+
+      const raw = await fetchScore(catKey, name);
+      let scores = SCORE_KEYS.map(k => raw?.scores?.[k] ?? null);
+      const totalScore = raw?.scores?.total_score ?? null;
+
+      const colorIdx = [...freeColors].sort((a, b) => a - b)[0];
+      freeColors.delete(colorIdx);
+      selected.push({ name, catKey, scores, totalScore, colorIdx, file: fileName || null });
+      updateAll();
+    }
+
+    function removeDataset(name, catKey) {
+      const idx = selected.findIndex(d => d.name === name && d.catKey === catKey);
+      if (idx === -1) return;
+      freeColors.add(selected[idx].colorIdx);
+      selected.splice(idx, 1);
+      updateAll();
+    }
+
+    function updateAll() {
+      // Update count
+      document.getElementById("selectedCount").textContent = selected.length;
+
+      // Max warning
+      const warn = document.getElementById("maxWarning");
+      warn.style.display = freeColors.size === 0 ? "inline-flex" : "none";
+
+      // Refresh open category lists
+      SUBJECTS.forEach(s => {
+        if (catCache[s.key]) renderCatList(s.key);
+      });
+
+      // Refresh search results if active
+      const q = document.getElementById("sidebarSearch").value.trim().toLowerCase();
+      if (q) renderSearchResults(q);
+
+      // Refresh candidate area (+/✓ 状态双向同步)
+      renderCandidates();
+
+      // Main area
+      renderMain();
+    }
+
+    // ── Main content ───────────────────────────────────────
+    function renderMain() {
+      const container = document.getElementById("mainContent");
+      const hasData = selected.length > 0;
+      // 数据集增删会重建分析卡片 DOM，旧图谱节点失效：停掉旧 simulation，
+      // 但保留 graph/analysis/datasetLinks 数据，重建后恢复显示（只有再点"深度分析"才更新）
+      if (typeof analysisState !== "undefined") {
+        if (analysisState.simulation) { analysisState.simulation.stop(); }
+        analysisState.simulation = null;
+        analysisState.running = false;
+        // 若正处于全屏，移除全屏弹窗（旧图谱节点随主区重建一并失效，由 _restoreAnalysis 重绘）
+        if (analysisState.fullscreen) {
+          const ov = document.getElementById("graphFsOverlay");
+          if (ov && ov.parentElement) ov.parentElement.removeChild(ov);
+          analysisState.fullscreen = false;
+          analysisState._fsOrigin = null;
+        }
+      }
+      container.innerHTML = `
+        <div class="compare-grid">
+          <div class="card radar-card">
+            <h3>雷达图对比</h3>
+            <canvas id="compareCanvas" width="420" height="400"></canvas>
+            <div class="legend" id="legendArea"></div>
+          </div>
+          <div class="right-col">
+            <div class="card table-card">
+              <table class="score-table" id="scoreTable"></table>
+              <div class="table-empty" id="tableEmpty" style="display:none;">从左侧列表点击[+] 将数据集加入，完成数据集对比</div>
+            </div>
+            <div class="card analysis-card" id="analysisCard">
+              <div class="analysis-head">
+                <h3>数据集分析</h3>
+                <button class="deep-analysis-btn" id="deepAnalysisBtn" ${hasData ? "" : "disabled"}>深度分析</button>
+              </div>
+              <div class="analysis-body" id="analysisBody">
+                <div class="analysis-placeholder" id="analysisPlaceholder">从左侧列表点击[+] 将数据集加入后，点击[深度分析]，完成数据集量衡</div>
+                <div class="analysis-progress-wrap" id="analysisProgressWrap" style="display:none;">
+                  <button type="button" class="task-progress-toggle" id="analysisProgressToggle">
+                    <span class="caret">▶</span><span id="analysisProgressToggleText"></span>
+                  </button>
+                  <ul class="task-progress" id="analysisProgress"></ul>
+                </div>
+                <div class="analysis-result" id="analysisResult" style="display:none;">
+                  <div class="analysis-tabs" id="analysisTabs">
+                    <button class="analysis-tab active" data-tab="graph">知识图谱</button>
+                    <button class="analysis-tab" data-tab="relation">数据关联</button>
+                    <button class="analysis-tab" data-tab="questions">科学问题</button>
+                    <button class="analysis-tab" data-tab="value">研究意义</button>
+                    <button class="analysis-tab" data-tab="application">应用场景</button>
+                  </div>
+                  <div class="analysis-panels" id="analysisPanels">
+                    <div class="analysis-panel" data-panel="graph">
+                      <button type="button" class="graph-fs-btn" id="graphFsBtn" title="全屏查看" aria-label="全屏查看"></button>
+                      <div class="graph-wrap" id="analysisGraphWrap"></div>
+                    </div>
+                    <div class="analysis-panel" data-panel="relation" style="display:none;"></div>
+                    <div class="analysis-panel" data-panel="questions" style="display:none;"></div>
+                    <div class="analysis-panel" data-panel="value" style="display:none;"></div>
+                    <div class="analysis-panel" data-panel="application" style="display:none;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      renderLegend();
+      renderTable();
+      drawRadar();
+      bindAnalysisUI();
+      updateAnalysisButton();
+      _restoreAnalysis();
+    }
+
+    // 数据集增删重建 DOM 后，若已有分析结果则恢复显示（图谱 + 各分析面板）
+    function _restoreAnalysis() {
+      if (typeof analysisState === "undefined" || !analysisState.graph) return;
+      // 显示结果区、隐藏占位
+      const placeholder = document.getElementById("analysisPlaceholder");
+      if (placeholder) placeholder.style.display = "none";
+      showAnalysisResult();
+      // 恢复进度摘要（折叠态）
+      const toggle = document.getElementById("analysisProgressToggle");
+      const toggleText = document.getElementById("analysisProgressToggleText");
+      const pw = document.getElementById("analysisProgressWrap");
+      if (pw && toggle && toggleText) {
+        pw.style.display = "block";
+        const list = document.getElementById("analysisProgress");
+        if (list) list.classList.add("collapsed");
+        toggle.classList.add("show");
+        toggle.classList.remove("expanded");
+        toggleText.textContent = "当前分析结果为历史结果，可重新点击[深度分析]获取最新结果";
+      }
+      // 重绘图谱 + 填充分析面板
+      renderAnalysisGraph();
+      if (analysisState.analysis) renderAnalysisPanels(analysisState.analysis, analysisState.datasetLinks);
+    }
+
+    function renderLegend() {
+      const legend = document.getElementById("legendArea");
+      legend.innerHTML = "";
+      selected.forEach(ds => {
+        const c = PALETTE[ds.colorIdx];
+        const item = document.createElement("div");
+        item.className = "legend-item";
+        item.innerHTML = `
+          <div class="legend-dot" style="background:${c.stroke}; box-shadow:0 0 7px ${c.stroke};"></div>
+          <a class="legend-name" title="${ds.name}" href="${detailUrl(ds.name, ds.catKey)}" target="_blank" rel="noopener noreferrer">${ds.name}</a>
+          <button class="legend-remove" title="移除此数据集">×</button>`;
+        item.querySelector(".legend-remove").addEventListener("click", () => removeDataset(ds.name, ds.catKey));
+        legend.appendChild(item);
+      });
+    }
+
+    function renderTable() {
+      const table = document.getElementById("scoreTable");
+      const emptyHint = document.getElementById("tableEmpty");
+      if (selected.length === 0) {
+        table.innerHTML = "";
+        if (emptyHint) emptyHint.style.display = "block";
+        return;
+      }
+      if (emptyHint) emptyHint.style.display = "none";
+      const headers = ["数据集", ...RADAR_LABELS, "综合评分", ""];
+      let html = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>`;
+      selected.forEach(ds => {
+        const c = PALETTE[ds.colorIdx];
+        const displayTotal = ds.totalScore !== null
+          ? ds.totalScore.toFixed(2)
+          : ds.scores.every(s => s === null)
+            ? "—"
+            : (ds.scores.reduce((a, b) => a + (b ?? 0), 0) / ds.scores.filter(s => s !== null).length).toFixed(2);
+        html += `<tr>
+          <td>
+            <div class="name-cell">
+              <div class="name-dot" style="background:${c.stroke}; box-shadow:0 0 5px ${c.stroke};"></div>
+              <a class="name-text" title="${ds.name}" href="${detailUrl(ds.name, ds.catKey)}" target="_blank" rel="noopener noreferrer">${ds.name}</a>
+            </div>
+          </td>
+          ${ds.scores.map(s => `<td class="${scoreClass(s)}">${s !== null ? s : "—"}</td>`).join("")}
+          <td class="total-score" style="color:${c.stroke};">${displayTotal}</td>
+          <td class="row-remove-cell"><button class="row-remove" data-name="${ds.name}" data-cat="${ds.catKey}" title="移出对比">×</button></td>
+        </tr>`;
+      });
+      html += "</tbody>";
+      table.innerHTML = html;
+      table.querySelectorAll(".row-remove").forEach(btn => {
+        btn.addEventListener("click", () => removeDataset(btn.dataset.name, btn.dataset.cat));
+      });
+    }
+
+    // ── Radar chart ────────────────────────────────────────
+    function drawRadar() {
+      const canvas = document.getElementById("compareCanvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const cssW = 420, cssH = 400;
+      canvas.style.width  = `${cssW}px`;
+      canvas.style.height = `${cssH}px`;
+      canvas.width  = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const n      = RADAR_LABELS.length;
+      const maxVal = 10;
+      const cx     = cssW / 2;
+      const cy     = cssH / 2 + 10;
+      const radius = 140;
+      const levels = 5;
+
+      ctx.clearRect(0, 0, cssW, cssH);
+
+      // Background rings
+      for (let l = 1; l <= levels; l++) {
+        const r = (radius / levels) * l;
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+          const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+          const x = cx + r * Math.cos(angle);
+          const y = cy + r * Math.sin(angle);
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = l === levels
+          ? "rgba(255,255,255,0.18)"
+          : "rgba(255,255,255,0.08)";
+        ctx.lineWidth = l === levels ? 1.2 : 0.8;
+        ctx.stroke();
+
+        // Level label
+        ctx.fillStyle = "rgba(182,199,230,0.35)";
+        ctx.font = "10px Sora, sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(l * 2), cx + 4, cy - (radius / levels) * l);
+      }
+
+      // Axis lines
+      for (let i = 0; i < n; i++) {
+        const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + radius * Math.cos(angle), cy + radius * Math.sin(angle));
+        ctx.strokeStyle = "rgba(255,255,255,0.15)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Labels
+      ctx.fillStyle = "#c0d4f0";
+      ctx.font = "13px Sora, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      RADAR_LABELS.forEach((label, i) => {
+        const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+        const lx = cx + (radius + 26) * Math.cos(angle);
+        const ly = cy + (radius + 26) * Math.sin(angle);
+        ctx.fillText(label, lx, ly);
+      });
+
+      // Dataset polygons (draw fills first, then strokes on top)
+      // Two passes: fills then strokes, for better visual layering
+      selected.forEach(ds => {
+        const c = PALETTE[ds.colorIdx];
+        ctx.beginPath();
+        ds.scores.forEach((score, i) => {
+          const ratio = Math.max(0, Math.min(maxVal, score ?? 0)) / maxVal;
+          const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+          const x = cx + radius * ratio * Math.cos(angle);
+          const y = cy + radius * ratio * Math.sin(angle);
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = c.fill;
+        ctx.fill();
+      });
+
+      selected.forEach(ds => {
+        const c = PALETTE[ds.colorIdx];
+        ctx.beginPath();
+        ds.scores.forEach((score, i) => {
+          const ratio = Math.max(0, Math.min(maxVal, score ?? 0)) / maxVal;
+          const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+          const x = cx + radius * ratio * Math.cos(angle);
+          const y = cy + radius * ratio * Math.sin(angle);
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.strokeStyle = c.stroke;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Vertex dots
+        ds.scores.forEach((score, i) => {
+          const ratio = Math.max(0, Math.min(maxVal, score ?? 0)) / maxVal;
+          const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+          const x = cx + radius * ratio * Math.cos(angle);
+          const y = cy + radius * ratio * Math.sin(angle);
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = c.stroke;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fillStyle = "#fff";
+          ctx.fill();
+        });
+      });
+    }
+
+    // ── 数据集深度分析（复用检索可视化：图谱 + LLM 分析，SSE 流式） ─────────────
+    const analysisState = {
+      graph: null,          // {nodes, links}
+      datasetLinks: {},     // slug -> {name, file, category}
+      analysis: null,
+      view: "global",       // global | drill | full | replay
+      centerId: null,       // 下钻视图中心数据集 id
+      simulation: null,
+      running: false,
+      fullscreen: false,   // 图谱是否处于全屏弹窗
+      _fsOrigin: null,     // 全屏前图谱的原 DOM 位置（退出时还原）
+    };
+
+    // 概念节点按 semantic_type 着色（与检索页一致）
+    const CONCEPT_COLORS = {
+      domain: "#f2b134",
+      subdomain: "#e8873a",
+      subject: "#d96bd0",
+      task: "#8cebdc",
+      method: "#9d8cff",
+      data_type: "#7fb2ff",
+      measurement: "#6bdcff",
+      annotation: "#a3d977",
+      temporal_coverage: "#c9b458",
+      spatial_coverage: "#58c4a0",
+      format: "#b0a08c",
+      framework: "#ff8fa3"
+    };
+    const CONCEPT_COLOR_DEFAULT = "#9fb4db";
+    // semantic_type 中文名
+    const SEMANTIC_LABELS = {
+      domain: "领域", subdomain: "子领域", subject: "主题", task: "任务",
+      method: "方法", data_type: "数据类型", measurement: "测量",
+      annotation: "标注", temporal_coverage: "时间覆盖", spatial_coverage: "空间覆盖",
+      format: "格式", framework: "框架"
+    };
+    // 下钻视图直接展示的强概念类型
+    const STRONG_SEMANTIC_TYPES = new Set(["domain", "subdomain", "subject", "task", "method"]);
+    const DS_COLOR = "#6bdcff"; // 数据集节点统一亮蓝
+
+    // 数据集显示名：优先 datasetLinks 里的 name，否则用 slug
+    function dsDisplayName(slug) {
+      const info = analysisState.datasetLinks[slug];
+      return (info && info.name) ? info.name : slug;
+    }
+    // 跳详情页 URL
+    function dsDetailUrl(slug) {
+      const info = analysisState.datasetLinks[slug] || {};
+      const params = new URLSearchParams();
+      params.set("name", info.name || slug);
+      if (info.file) params.set("file", info.file);
+      if (info.category) params.set("category", info.category);
+      return `dataset_detail.html?${params.toString()}`;
+    }
+
+    // 基于合并大图的完整边集，BFS 求数据集两两最短路径跳数（全局视图连线用）
+    function computePathLinks(datasetIds, allLinks, maxHops) {
+      maxHops = maxHops || 20;
+      const adjacency = new Map();
+      const idOf = v => (typeof v === "object" && v !== null) ? v.id : v;
+      (allLinks || []).forEach(l => {
+        const s = idOf(l.source), t = idOf(l.target);
+        if (s == null || t == null) return;
+        if (!adjacency.has(s)) adjacency.set(s, new Set());
+        if (!adjacency.has(t)) adjacency.set(t, new Set());
+        adjacency.get(s).add(t);
+        adjacency.get(t).add(s);
+      });
+      function bfsHops(src) {
+        const dist = new Map([[src, 0]]);
+        const queue = [src];
+        while (queue.length) {
+          const cur = queue.shift();
+          const d = dist.get(cur);
+          if (d >= maxHops) continue;
+          const nbrs = adjacency.get(cur);
+          if (!nbrs) continue;
+          nbrs.forEach(nb => {
+            if (!dist.has(nb)) { dist.set(nb, d + 1); queue.push(nb); }
+          });
+        }
+        return dist;
+      }
+      const result = [];
+      const dsList = Array.from(datasetIds);
+      for (let i = 0; i < dsList.length; i++) {
+        const dist = bfsHops(dsList[i]);
+        for (let j = i + 1; j < dsList.length; j++) {
+          const h = dist.get(dsList[j]);
+          if (h != null && h >= 2) result.push({ source: dsList[i], target: dsList[j], hops: h });
+        }
+      }
+      return result;
+    }
+
+    function updateAnalysisButton() {
+      const btn = document.getElementById("deepAnalysisBtn");
+      if (btn) btn.disabled = selected.length === 0 || analysisState.running;
+    }
+
+    function bindAnalysisUI() {
+      const btn = document.getElementById("deepAnalysisBtn");
+      if (btn && !btn._bound) {
+        btn._bound = true;
+        btn.addEventListener("click", runDeepAnalysis);
+      }
+      // tab 切换
+      document.querySelectorAll("#analysisTabs .analysis-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll("#analysisTabs .analysis-tab").forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+          const key = tab.dataset.tab;
+          document.querySelectorAll("#analysisPanels .analysis-panel").forEach(p => {
+            p.style.display = p.dataset.panel === key ? "block" : "none";
+          });
+        });
+      });
+      // 进度条折叠开关
+      const toggle = document.getElementById("analysisProgressToggle");
+      if (toggle && !toggle._bound) {
+        toggle._bound = true;
+        toggle.addEventListener("click", () => {
+          const list = document.getElementById("analysisProgress");
+          const expanded = list.classList.toggle("collapsed");
+          toggle.classList.toggle("expanded", !expanded);
+        });
+      }
+      // 图谱全屏开关
+      const fsBtn = document.getElementById("graphFsBtn");
+      if (fsBtn && !fsBtn._bound) {
+        fsBtn._bound = true;
+        _renderFsBtnIcon();
+        fsBtn.addEventListener("click", () => {
+          if (analysisState.fullscreen) exitGraphFullscreen();
+          else enterGraphFullscreen();
+        });
+      }
+    }
+
+    // ---- 图谱全屏弹窗 ----
+    const _FS_ENTER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+    const _FS_EXIT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
+
+    function _renderFsBtnIcon() {
+      const fsBtn = document.getElementById("graphFsBtn");
+      if (!fsBtn) return;
+      fsBtn.innerHTML = analysisState.fullscreen ? _FS_EXIT_SVG : _FS_ENTER_SVG;
+      fsBtn.title = analysisState.fullscreen ? "退出全屏" : "全屏查看";
+      fsBtn.setAttribute("aria-label", fsBtn.title);
+    }
+
+    function enterGraphFullscreen() {
+      if (analysisState.fullscreen) return;
+      const wrap = getGraphWrap();
+      const fsBtn = document.getElementById("graphFsBtn");
+      if (!wrap || !wrap.parentElement) return;
+      // 记录原位置（父容器 + 下一个兄弟节点），退出时还原
+      analysisState._fsOrigin = { parent: wrap.parentElement, next: wrap.nextSibling };
+      // 建 overlay，把按钮和图谱一起移入（按钮浮于图谱右上角）
+      const overlay = document.createElement("div");
+      overlay.className = "graph-fs-overlay";
+      overlay.id = "graphFsOverlay";
+      if (fsBtn) overlay.appendChild(fsBtn);
+      overlay.appendChild(wrap);
+      document.body.appendChild(overlay);
+      analysisState.fullscreen = true;
+      _renderFsBtnIcon();
+      // 全屏后画布变大，重绘当前视图以利用大尺寸
+      renderAnalysisGraph();
+    }
+
+    function exitGraphFullscreen() {
+      if (!analysisState.fullscreen) return;
+      const wrap = getGraphWrap();
+      const fsBtn = document.getElementById("graphFsBtn");
+      const origin = analysisState._fsOrigin;
+      const overlay = document.getElementById("graphFsOverlay");
+      if (wrap && origin && origin.parent) {
+        origin.parent.insertBefore(wrap, origin.next || null);
+        if (fsBtn) origin.parent.insertBefore(fsBtn, wrap); // 按钮回到图谱前
+      }
+      if (overlay && overlay.parentElement) overlay.parentElement.removeChild(overlay);
+      analysisState.fullscreen = false;
+      analysisState._fsOrigin = null;
+      _renderFsBtnIcon();
+      // 缩回原布局后重绘，恢复原尺寸
+      renderAnalysisGraph();
+    }
+
+    // ---- 进度条 ----
+    let _curProgressItem = null;
+    function pushProgressStep(msg) {
+      const list = document.getElementById("analysisProgress");
+      if (!list) return;
+      if (_curProgressItem) {
+        _curProgressItem.classList.remove("active");
+        _curProgressItem.classList.add("done");
+      }
+      const li = document.createElement("li");
+      li.className = "active";
+      li.innerHTML = `<span class="dot"></span><span></span>`;
+      li.lastChild.textContent = msg;
+      list.appendChild(li);
+      _curProgressItem = li;
+    }
+    function finishProgress(summary) {
+      if (_curProgressItem) {
+        _curProgressItem.classList.remove("active");
+        _curProgressItem.classList.add("done");
+        _curProgressItem = null;
+      }
+      const list = document.getElementById("analysisProgress");
+      const toggle = document.getElementById("analysisProgressToggle");
+      const toggleText = document.getElementById("analysisProgressToggleText");
+      if (list && toggle && toggleText) {
+        list.classList.add("collapsed");
+        toggle.classList.add("show");
+        toggle.classList.remove("expanded");
+        toggleText.textContent = summary;
+      }
+    }
+
+    // ---- SSE 流式调用 ----
+    async function runDeepAnalysis() {
+      if (analysisState.running || selected.length === 0) return;
+      const files = selected.map(d => d.file).filter(Boolean);
+      if (!files.length) {
+        alert("选中的数据集缺少文件信息，无法分析。");
+        return;
+      }
+      analysisState.running = true;
+      updateAnalysisButton();
+
+      // 重置 UI
+      document.getElementById("analysisPlaceholder").style.display = "none";
+      document.getElementById("analysisResult").style.display = "none";
+      const pw = document.getElementById("analysisProgressWrap");
+      pw.style.display = "block";
+      const list = document.getElementById("analysisProgress");
+      list.innerHTML = "";
+      list.classList.remove("collapsed");
+      const toggle = document.getElementById("analysisProgressToggle");
+      toggle.classList.remove("show", "expanded");
+      _curProgressItem = null;
+
+      try {
+        const res = await fetch("/api/graph_by_datasets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ files }),
+        });
+        if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const frames = buf.split("\n\n");
+          buf = frames.pop();
+          for (const frame of frames) {
+            const line = frame.trim();
+            if (!line.startsWith("data:")) continue;
+            let payload;
+            try { payload = JSON.parse(line.slice(5).trim()); } catch { continue; }
+            handleAnalysisEvent(payload);
+          }
+        }
+      } catch (err) {
+        pushProgressStep(`分析失败: ${err.message}`);
+        finishProgress("分析失败");
+      } finally {
+        analysisState.running = false;
+        updateAnalysisButton();
+      }
+    }
+
+    function handleAnalysisEvent(ev) {
+      if (ev.msg) pushProgressStep(ev.msg);
+      if (ev.error) { finishProgress("分析失败"); return; }
+      // step2：拿到图谱即可视化（默认数据集全局图）
+      if (ev.graph) {
+        analysisState.graph = ev.graph;
+        analysisState.datasetLinks = ev.dataset_links || {};
+        analysisState.view = "global";
+        analysisState.centerId = null;
+        showAnalysisResult();
+        renderAnalysisGraph();
+      }
+      // step4：拿到 LLM 分析
+      if (ev.analysis) {
+        analysisState.analysis = ev.analysis;
+        renderAnalysisPanels(ev.analysis, analysisState.datasetLinks);
+      }
+      if (ev.done) {
+        finishProgress(ev.msg || "分析完成");
+      }
+    }
+
+    function showAnalysisResult() {
+      document.getElementById("analysisResult").style.display = "flex";
+    }
+
+    // ---- 图谱绘制（D3 力导向，数据集节点统一亮蓝） ----
+    function getGraphWrap() { return document.getElementById("analysisGraphWrap"); }
+
+    function renderAnalysisGraph() {
+      const g = analysisState.graph;
+      if (!g) return;
+      if (analysisState.view === "drill" && analysisState.centerId) drawDrillView(analysisState.centerId);
+      else if (analysisState.view === "full") drawFullGraphView();
+      else drawGlobalView();
+    }
+
+    function _clearGraph() {
+      if (analysisState.simulation) { analysisState.simulation.stop(); analysisState.simulation = null; }
+      const wrap = getGraphWrap();
+      if (wrap) wrap.innerHTML = "";
+      return wrap;
+    }
+
+    function _mkTooltip(wrap) {
+      const tip = document.createElement("div");
+      tip.className = "graph-tooltip";
+      wrap.appendChild(tip);
+      return tip;
+    }
+
+    function _bindDrag(selection, simulation) {
+      selection.call(d3.drag()
+        .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+        .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
+        .on("end", (e, d) => { if (!e.active) simulation.alphaTarget(0); }));
+    }
+
+    // 状态A：数据集全局图——只显示数据集节点，按合并大图最短路径跳数连线；点击进入下钻子图
+    function drawGlobalView() {
+      const g = analysisState.graph;
+      const allNodes = g.nodes || [];
+      const dsNodes = allNodes.filter(n => n.type === "dataset");
+      const wrap = _clearGraph();
+      if (!dsNodes.length) { wrap.innerHTML = `<div class="graph-placeholder">未生成图谱数据</div>`; return; }
+
+      const W = wrap.clientWidth || 800, H = wrap.clientHeight || 460;
+      const nodes = dsNodes.map(n => ({ id: n.id, kind: "dataset" }));
+      const dsIdSet = new Set(nodes.map(n => n.id));
+      const pathLinks = computePathLinks(dsIdSet, g.links || [], 20);
+      const links = pathLinks.map(l => ({ source: l.source, target: l.target, hops: l.hops }));
+      const hopBucket = d => (d.hops <= 2 ? 2 : (d.hops === 3 ? 3 : (d.hops === 4 ? 4 : 5)));
+      const linkWidth = d => ({ 2: 2.2, 3: 1.8, 4: 1.5, 5: 1.2 })[hopBucket(d)];
+      const linkOpacity = d => ({ 2: 0.9, 3: 0.6, 4: 0.38, 5: 0.2 })[hopBucket(d)];
+      const R = 11;
+
+      const svg = d3.select(wrap).append("svg").attr("viewBox", [0, 0, W, H]);
+      const zoomLayer = svg.append("g");
+      svg.call(d3.zoom().scaleExtent([0.4, 3]).on("zoom", e => zoomLayer.attr("transform", e.transform)));
+
+      const link = zoomLayer.append("g").selectAll("line").data(links).join("line")
+        .attr("stroke", d => `rgba(107, 220, 255, ${linkOpacity(d)})`)
+        .attr("stroke-width", linkWidth);
+
+      const node = zoomLayer.append("g").selectAll("circle").data(nodes).join("circle")
+        .attr("r", R)
+        .attr("fill", DS_COLOR)
+        .attr("fill-opacity", 0.9)
+        .attr("stroke", "rgba(107, 220, 255, 0.55)")
+        .attr("stroke-width", 1.5)
+        .style("cursor", "pointer");
+
+      const label = zoomLayer.append("g").selectAll("text").data(nodes).join("text")
+        .attr("class", "graph-node-label")
+        .attr("dy", R + 12)
+        .text(d => { const nm = dsDisplayName(d.id); return nm.length > 18 ? nm.slice(0, 17) + "…" : nm; });
+
+      const sim = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(d => ({ 2: 90, 3: 130, 4: 170, 5: 210 })[hopBucket(d)]))
+        .force("charge", d3.forceManyBody().strength(-300))
+        .force("collide", d3.forceCollide().radius(R + 14))
+        .force("center", d3.forceCenter(W / 2, H / 2))
+        .force("x", d3.forceX(W / 2).strength(0.06))
+        .force("y", d3.forceY(H / 2).strength(0.08));
+      analysisState.simulation = sim;
+      sim.on("tick", () => {
+        link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+        node.attr("cx", d => d.x).attr("cy", d => d.y);
+        label.attr("x", d => d.x).attr("y", d => d.y);
+      });
+      _bindDrag(node, sim);
+
+      const tip = _mkTooltip(wrap);
+      node.on("mouseenter", (e, d) => { tip.style.display = "block"; tip.textContent = `${dsDisplayName(d.id)}\n数据集`; })
+        .on("mousemove", e => { const r = wrap.getBoundingClientRect(); tip.style.left = (e.clientX - r.left + 12) + "px"; tip.style.top = (e.clientY - r.top + 12) + "px"; })
+        .on("mouseleave", () => { tip.style.display = "none"; });
+
+      // 点击数据集节点 → 进入下钻子图
+      node.on("click", (e, d) => {
+        analysisState.view = "drill";
+        analysisState.centerId = d.id;
+        drawDrillView(d.id);
+      });
+
+      // 左上角"查看关系视图"按钮 → 完整合并大图
+      const fullBtn = document.createElement("button");
+      fullBtn.className = "graph-back-btn";
+      fullBtn.textContent = "查看关系视图";
+      fullBtn.addEventListener("click", () => { analysisState.view = "full"; analysisState.centerId = null; drawFullGraphView(); });
+      wrap.appendChild(fullBtn);
+
+      // 图注
+      const legend = document.createElement("div");
+      legend.className = "graph-legend";
+      legend.innerHTML =
+        `<div><span class="lg-dot" style="background:${DS_COLOR}"></span>数据集</div>` +
+        `<div><span class="lg-line"></span>关联路径（越粗跳数越少、关联越强）</div>` +
+        `<div style="margin-top:2px;color:#8ea3c8">点击节点查看其概念构成</div>`;
+      wrap.appendChild(legend);
+    }
+
+    // 状态C：全局关系图——显示所有节点（数据集 + 概念），概念按语义类型着色
+    function drawFullGraphView() {
+      const g = analysisState.graph;
+      const allNodes = g.nodes || [];
+      const allLinks = g.links || [];
+      const wrap = _clearGraph();
+      if (!allNodes.length) { wrap.innerHTML = `<div class="graph-placeholder">未生成图谱数据</div>`; return; }
+
+      const W = wrap.clientWidth || 800, H = wrap.clientHeight || 460;
+      const nodes = allNodes.map(n => ({
+        id: n.id,
+        kind: n.type === "concept" ? "concept" : "dataset",
+        name: n.name || n.id,
+        semanticType: n.semantic_type || "",
+        confidence: n.confidence || 0
+      }));
+      const links = allLinks.map(l => ({
+        source: (typeof l.source === "object" ? l.source.id : l.source),
+        target: (typeof l.target === "object" ? l.target.id : l.target),
+        edge_type: l.edge_type || ""
+      }));
+
+      const radiusOf = d => d.kind === "dataset" ? 11 : 5 + d.confidence * 1.1;
+      const colorOf = d => d.kind === "dataset" ? DS_COLOR : (CONCEPT_COLORS[d.semanticType] || CONCEPT_COLOR_DEFAULT);
+
+      const svg = d3.select(wrap).append("svg").attr("viewBox", [0, 0, W, H]);
+      const zoomLayer = svg.append("g");
+      svg.call(d3.zoom().scaleExtent([0.4, 3]).on("zoom", e => zoomLayer.attr("transform", e.transform)));
+
+      const link = zoomLayer.append("g").selectAll("line").data(links).join("line")
+        .attr("stroke", d => d.edge_type === "concept_concept" ? "rgba(167,139,250,0.32)" : "rgba(107,220,255,0.22)")
+        .attr("stroke-width", 1);
+
+      const node = zoomLayer.append("g").selectAll("circle").data(nodes).join("circle")
+        .attr("r", radiusOf)
+        .attr("fill", colorOf)
+        .attr("fill-opacity", d => d.kind === "concept" ? 0.7 : 0.92)
+        .attr("stroke", "rgba(255,255,255,0.18)")
+        .attr("stroke-width", 1)
+        .style("cursor", d => d.kind === "dataset" ? "pointer" : "default");
+
+      const label = zoomLayer.append("g").selectAll("text").data(nodes).join("text")
+        .attr("class", "graph-node-label")
+        .attr("dy", d => radiusOf(d) + 11)
+        .text(d => { const nm = d.kind === "concept" ? d.name : dsDisplayName(d.id); return nm.length > 16 ? nm.slice(0, 15) + "…" : nm; });
+
+      const sim = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(d => d.edge_type === "concept_concept" ? 60 : 90))
+        .force("charge", d3.forceManyBody().strength(-260))
+        .force("collide", d3.forceCollide().radius(d => radiusOf(d) + 8))
+        .force("center", d3.forceCenter(W / 2, H / 2))
+        .force("x", d3.forceX(W / 2).strength(0.06))
+        .force("y", d3.forceY(H / 2).strength(0.08));
+      analysisState.simulation = sim;
+      sim.on("tick", () => {
+        link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+        node.attr("cx", d => d.x).attr("cy", d => d.y);
+        label.attr("x", d => d.x).attr("y", d => d.y);
+      });
+      _bindDrag(node, sim);
+
+      const tip = _mkTooltip(wrap);
+      node.on("mouseenter", (e, d) => {
+        tip.style.display = "block";
+        tip.textContent = d.kind === "concept"
+          ? `${d.name}\n类型 ${SEMANTIC_LABELS[d.semanticType] || d.semanticType || "concept"} · 置信度 ${d.confidence}`
+          : `${dsDisplayName(d.id)}\n数据集`;
+      })
+        .on("mousemove", e => { const r = wrap.getBoundingClientRect(); tip.style.left = (e.clientX - r.left + 12) + "px"; tip.style.top = (e.clientY - r.top + 12) + "px"; })
+        .on("mouseleave", () => { tip.style.display = "none"; });
+
+      // 完整大图点击数据集 → 进入下钻子图
+      node.on("click", (e, d) => {
+        if (d.kind !== "dataset") return;
+        analysisState.view = "drill";
+        analysisState.centerId = d.id;
+        drawDrillView(d.id);
+      });
+
+      // 左上角"查看数据视图"按钮 → 返回全局数据集视图
+      const briefBtn = document.createElement("button");
+      briefBtn.className = "graph-back-btn";
+      briefBtn.textContent = "查看数据视图";
+      briefBtn.addEventListener("click", () => { analysisState.view = "global"; analysisState.centerId = null; drawGlobalView(); });
+      wrap.appendChild(briefBtn);
+
+      // 图注：数据集 + 概念类型（可收起）
+      _appendConceptLegend(wrap, nodes);
+    }
+
+    // 状态B：下钻子图——以某数据集为中心，BFS 多跳展示其概念与相邻数据集
+    function drawDrillView(centerId) {
+      const g = analysisState.graph;
+      const allNodes = g.nodes || [];
+      const allLinks = g.links || [];
+      const nodeById = new Map(allNodes.map(n => [n.id, n]));
+      const centerRaw = nodeById.get(centerId);
+      const wrap = _clearGraph();
+      if (!centerRaw) { analysisState.view = "global"; analysisState.centerId = null; drawGlobalView(); return; }
+
+      const W = wrap.clientWidth || 800, H = wrap.clientHeight || 460;
+      const MAX_HOPS = 3, MAX_NODES = 60, TARGET_NODES = 50;
+      const WEAK_SEMANTIC_TYPES = new Set(["format", "temporal_coverage", "spatial_coverage", "framework"]);
+      const isWeakConcept = n => n.type === "concept" && WEAK_SEMANTIC_TYPES.has(n.semantic_type) && (n.confidence || 0) < 4;
+
+      // 无向邻接表
+      const adjacency = new Map();
+      const linkIdOf = v => (typeof v === "object" && v !== null) ? v.id : v;
+      allLinks.forEach(l => {
+        const s = linkIdOf(l.source), t = linkIdOf(l.target);
+        if (s == null || t == null) return;
+        if (!adjacency.has(s)) adjacency.set(s, new Set());
+        if (!adjacency.has(t)) adjacency.set(t, new Set());
+        adjacency.get(s).add(t); adjacency.get(t).add(s);
+      });
+
+      // BFS 分层
+      const hopMap = new Map([[centerId, 0]]);
+      let frontier = [centerId];
+      for (let hop = 1; hop <= MAX_HOPS && frontier.length; hop++) {
+        const next = [];
+        frontier.forEach(id => {
+          const nbrs = adjacency.get(id); if (!nbrs) return;
+          nbrs.forEach(nid => {
+            if (!nodeById.has(nid) || hopMap.has(nid)) return;
+            hopMap.set(nid, hop); next.push(nid);
+          });
+        });
+        frontier = next;
+      }
+
+      // 节点过滤：数据集全保留；强概念保留；弱概念候补
+      const pickedIds = new Set([centerId]);
+      const weakPool = [];
+      for (let hop = 1; hop <= MAX_HOPS; hop++) {
+        const layer = Array.from(hopMap.entries()).filter(([, h]) => h === hop).map(([id]) => nodeById.get(id));
+        const concepts = layer.filter(n => n.type === "concept").sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+        const datasets = layer.filter(n => n.type === "dataset");
+        concepts.forEach(c => { if (isWeakConcept(c)) { weakPool.push(c); return; } if (pickedIds.size < MAX_NODES) pickedIds.add(c.id); });
+        datasets.forEach(d => { if (pickedIds.size < MAX_NODES) pickedIds.add(d.id); });
+      }
+      if (pickedIds.size < TARGET_NODES) { for (const c of weakPool) { if (pickedIds.size >= MAX_NODES) break; pickedIds.add(c.id); } }
+
+      // 组装节点
+      const nodes = [{ id: centerId, kind: "center", name: dsDisplayName(centerId) }];
+      pickedIds.forEach(id => {
+        if (id === centerId) return;
+        const raw = nodeById.get(id);
+        if (raw.type === "concept") nodes.push({ id: raw.id, kind: "concept", name: raw.name || raw.id, semanticType: raw.semantic_type || "", confidence: raw.confidence || 0 });
+        else nodes.push({ id: raw.id, kind: "dataset", name: dsDisplayName(raw.id) });
+      });
+
+      // 组装边（两端都在已选集合内）
+      const nodeIdSet = new Set(nodes.map(n => n.id));
+      const links = [];
+      const seenEdge = new Set();
+      allLinks.forEach(l => {
+        const s = linkIdOf(l.source), t = linkIdOf(l.target);
+        if (!nodeIdSet.has(s) || !nodeIdSet.has(t) || s === t) return;
+        const key = s < t ? s + "|" + t : t + "|" + s;
+        if (seenEdge.has(key)) return; seenEdge.add(key);
+        links.push({ source: s, target: t });
+      });
+
+      const radiusOf = d => d.kind === "center" ? 16 : (d.kind === "concept" ? 6 + d.confidence * 1.2 : 9);
+      const colorOf = d => d.kind === "center" ? DS_COLOR : (d.kind === "concept" ? (CONCEPT_COLORS[d.semanticType] || CONCEPT_COLOR_DEFAULT) : DS_COLOR);
+
+      const svg = d3.select(wrap).append("svg").attr("viewBox", [0, 0, W, H]);
+      const zoomLayer = svg.append("g");
+      svg.call(d3.zoom().scaleExtent([0.4, 3]).on("zoom", e => zoomLayer.attr("transform", e.transform)));
+
+      const link = zoomLayer.append("g").selectAll("line").data(links).join("line")
+        .attr("stroke", "rgba(107, 220, 255, 0.4)").attr("stroke-width", 1.5);
+
+      const node = zoomLayer.append("g").selectAll("circle").data(nodes).join("circle")
+        .attr("r", radiusOf)
+        .attr("fill", colorOf)
+        .attr("fill-opacity", d => d.kind === "concept" ? 0.85 : 0.95)
+        .attr("stroke", d => d.kind === "center" ? "rgba(107, 220, 255, 0.8)" : "rgba(255,255,255,0.15)")
+        .attr("stroke-width", d => d.kind === "center" ? 2.5 : 1.2)
+        .style("cursor", d => d.kind === "concept" ? "default" : "pointer");
+
+      const label = zoomLayer.append("g").selectAll("text").data(nodes).join("text")
+        .attr("class", "graph-node-label")
+        .attr("dy", d => radiusOf(d) + 12)
+        .text(d => { const nm = d.name; return nm.length > 16 ? nm.slice(0, 15) + "…" : nm; });
+
+      const sim = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
+          const s = typeof d.source === "object" ? d.source : null, t = typeof d.target === "object" ? d.target : null;
+          const kinds = [s && s.kind, t && t.kind];
+          if (kinds.includes("center")) return 80;
+          if (kinds[0] === "concept" && kinds[1] === "concept") return 100;
+          if (kinds.includes("concept")) return 130;
+          return 150;
+        }))
+        .force("charge", d3.forceManyBody().strength(-300))
+        .force("collide", d3.forceCollide().radius(d => radiusOf(d) + 10))
+        .force("center", d3.forceCenter(W / 2, H / 2))
+        .force("x", d3.forceX(W / 2).strength(0.06))
+        .force("y", d3.forceY(H / 2).strength(0.08));
+      analysisState.simulation = sim;
+      nodes[0].fx = W / 2; nodes[0].fy = H / 2;
+      sim.on("tick", () => {
+        link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+        node.attr("cx", d => d.x).attr("cy", d => d.y);
+        label.attr("x", d => d.x).attr("y", d => d.y);
+      });
+      _bindDrag(node, sim);
+
+      const tip = _mkTooltip(wrap);
+      node.on("mouseenter", (e, d) => {
+        tip.style.display = "block";
+        tip.textContent = d.kind === "concept"
+          ? `${d.name}\n类型 ${SEMANTIC_LABELS[d.semanticType] || d.semanticType || "concept"} · 置信度 ${d.confidence}`
+          : `${d.name}\n数据集${d.kind === "center" ? " · 当前中心（点击查看详情）" : ""}`;
+      })
+        .on("mousemove", e => { const r = wrap.getBoundingClientRect(); tip.style.left = (e.clientX - r.left + 12) + "px"; tip.style.top = (e.clientY - r.top + 12) + "px"; })
+        .on("mouseleave", () => { tip.style.display = "none"; });
+
+      // 点击：中心→详情页；其它数据集→切换中心；概念→不跳转
+      node.on("click", (e, d) => {
+        if (d.kind === "center") { window.open(dsDetailUrl(d.id), "_blank", "noopener,noreferrer"); }
+        else if (d.kind === "dataset") { analysisState.centerId = d.id; drawDrillView(d.id); }
+      });
+
+      // 左上角返回按钮
+      const backBtn = document.createElement("button");
+      backBtn.className = "graph-back-btn";
+      backBtn.textContent = "← 返回";
+      backBtn.addEventListener("click", () => { analysisState.view = "global"; analysisState.centerId = null; drawGlobalView(); });
+      wrap.appendChild(backBtn);
+
+      // 图注：中心/相关数据集 + 概念类型（可收起）
+      _appendConceptLegend(wrap, nodes, true);
+    }
+
+    // 图注：数据集说明 + 当前图中出现的概念类型（可收起，drill 视图带中心说明）
+    function _appendConceptLegend(wrap, nodes, isDrill) {
+      const presentTypes = [];
+      Object.keys(CONCEPT_COLORS).forEach(t => { if (nodes.some(n => n.kind === "concept" && n.semanticType === t)) presentTypes.push(t); });
+      const legend = document.createElement("div");
+      legend.className = "graph-legend is-toggleable";
+      let html = isDrill
+        ? `<div><span class="lg-dot" style="background:${DS_COLOR}"></span>中心 / 相关数据集</div>`
+        : `<div><span class="lg-dot" style="background:${DS_COLOR}"></span>数据集</div>`;
+      if (presentTypes.length) {
+        html += `<div style="margin-top:4px;color:#8ea3c8">概念节点：</div>`;
+        presentTypes.forEach(t => { html += `<div><span class="lg-dot" style="background:${CONCEPT_COLORS[t]}"></span>${SEMANTIC_LABELS[t] || t}</div>`; });
+      }
+      html += isDrill
+        ? `<div style="margin-top:2px;color:#8ea3c8">点击中心节点查看数据集详情</div>`
+        : `<div style="margin-top:2px;color:#8ea3c8">点击数据集节点查看其概念构成</div>`;
+      legend.innerHTML = html;
+      legend.hidden = true;
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "graph-legend-toggle";
+      toggle.textContent = "显示图例";
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.addEventListener("click", () => {
+        const expanded = legend.hidden;
+        legend.hidden = !expanded;
+        toggle.textContent = expanded ? "隐藏图例" : "显示图例";
+        toggle.setAttribute("aria-expanded", String(expanded));
+      });
+      wrap.append(toggle, legend);
+    }
+
+    // ---- 分析面板（数据关联/科学问题/研究意义/应用场景） ----
+    function renderReadableText(container, text) {
+      if (!container) return;
+      // 统一换行：把字面 \n / \r\n（反斜杠字符）转成真实换行
+      const normalized = String(text)
+        .replace(/\r\n/g, "\n")
+        .replace(/\\r\\n/g, "\n")
+        .replace(/\\n/g, "\n");
+      // 按空行拆分段落（单个换行也视为分段），每段一个 <p>，首行缩进两字符、段间留白
+      const paras = normalized.split(/\n+/).map(s => s.trim()).filter(Boolean);
+      container.replaceChildren();
+      paras.forEach(p => {
+        const el = document.createElement("p");
+        el.className = "panel-para";
+        el.textContent = p;
+        container.appendChild(el);
+      });
+    }
+
+    function renderAnalysisPanels(analysis, datasetLinks) {
+      analysis = analysis || {};
+      datasetLinks = datasetLinks || {};
+      const panels = document.getElementById("analysisPanels");
+
+      // 研究意义
+      const valuePanel = panels.querySelector('[data-panel="value"]');
+      const sciValue = (analysis.scientific_value || "").trim();
+      valuePanel.innerHTML = sciValue
+        ? `<div class="panel-text"></div>` : `<div class="panel-loading">暂无分析结果</div>`;
+      if (sciValue) renderReadableText(valuePanel.querySelector(".panel-text"), sciValue);
+
+      // 数据关联
+      const rPanel = panels.querySelector('[data-panel="relation"]');
+      const relation = (analysis.dataset_relationships || "").trim();
+      rPanel.innerHTML = relation
+        ? `<div class="panel-text"></div>` : `<div class="panel-loading">暂无分析结果</div>`;
+      if (relation) renderReadableText(rPanel.querySelector(".panel-text"), relation);
+
+      // 科学问题
+      const qPanel = panels.querySelector('[data-panel="questions"]');
+      const questions = analysis.research_questions || [];
+      if (!questions.length) {
+        qPanel.innerHTML = `<div class="panel-loading">暂无分析结果</div>`;
+      } else {
+        qPanel.replaceChildren();
+        questions.forEach((q, idx) => {
+          const qText = (typeof q === "string") ? q : (q.question || "");
+          const qDatasets = (typeof q === "object" && Array.isArray(q.datasets)) ? q.datasets : [];
+          const item = document.createElement("div");
+          item.className = "panel-question";
+          const textEl = document.createElement("div");
+          textEl.className = "q-text";
+          textEl.textContent = `${idx + 1}. ${qText}`;
+          item.appendChild(textEl);
+          if (qDatasets.length) {
+            const dsWrap = document.createElement("div");
+            dsWrap.className = "q-datasets";
+            dsWrap.innerHTML = `<span class="q-ds-label">支撑数据集：</span>`;
+            qDatasets.forEach(dsName => {
+              const info = datasetLinks[dsName];
+              const link = document.createElement("a");
+              link.className = "q-ds-link";
+              if (info) {
+                const params = new URLSearchParams();
+                params.set("name", info.name || dsName);
+                if (info.file) params.set("file", info.file);
+                if (info.category) params.set("category", info.category);
+                link.href = `dataset_detail.html?${params.toString()}`;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+              }
+              link.textContent = (info && info.name) || dsName;
+              dsWrap.appendChild(link);
+            });
+            item.appendChild(dsWrap);
+          }
+          qPanel.appendChild(item);
+        });
+      }
+
+      // 应用场景
+      const aPanel = panels.querySelector('[data-panel="application"]');
+      const directions = analysis.research_directions || [];
+      const scenarios = analysis.application_scenarios || [];
+      if (!directions.length && !scenarios.length) {
+        aPanel.innerHTML = `<div class="panel-loading">暂无分析结果</div>`;
+      } else {
+        let html = "";
+        if (directions.length) html += `<div class="panel-subtitle">潜在研究方向</div><ol class="panel-list" id="_dirList"></ol>`;
+        if (scenarios.length) html += `<div class="panel-subtitle">应用场景</div><ol class="panel-list" id="_scnList"></ol>`;
+        aPanel.innerHTML = html;
+        const dl = aPanel.querySelector("#_dirList");
+        if (dl) directions.forEach(t => { const li = document.createElement("li"); li.textContent = t; dl.appendChild(li); });
+        const sl = aPanel.querySelector("#_scnList");
+        if (sl) scenarios.forEach(t => { const li = document.createElement("li"); li.textContent = t; sl.appendChild(li); });
+      }
+    }
+
+    // ── Init ───────────────────────────────────────────────
+    buildSidebar();
+    setupSearch();
+    renderMain();
+    renderCandidates();
+
+    // Preload all categories in background for search to work
+    (async () => {
+      for (const subj of SUBJECTS) {
+        if (!catCache[subj.key]) {
+          await loadCat(subj);
+          // If category is already open, refresh its rendered list
+          const listEl = document.getElementById(`list-${subj.key}`);
+          const catEl  = listEl?.closest(".cat-item");
+          if (catEl?.classList.contains("open")) renderCatList(subj.key);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

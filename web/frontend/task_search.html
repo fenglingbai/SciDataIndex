@@ -1,0 +1,2528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  
+<script>
+  const pathParts = location.pathname.split("/");
+  const base = pathParts[1] === "scidataindex"
+    ? "/scidataindex/"
+    : "/";
+  document.write(`<base href="${base}">`);
+</script>
+<meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SciDataIndex · 任务检索</title>
+  <script src="lib/d3.v7.min.js"></script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap");
+
+    :root {
+      --bg-0: #02061a;
+      --bg-1: #061338;
+      --bg-2: #0a1f4f;
+      --accent: #2ee6c9;
+      --glow: #6bdcff;
+      --text-0: #e9f2ff;
+      --text-1: #b6c7e6;
+      --card: rgba(12, 27, 69, 0.7);
+      --stroke: rgba(255, 255, 255, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Sora", "HarmonyOS Sans SC", "PingFang SC", sans-serif;
+      color: var(--text-0);
+      background: radial-gradient(900px 450px at 20% 20%, #183ea4 0%, transparent 60%),
+        radial-gradient(900px 520px at 80% 20%, #0c1a45 0%, transparent 70%),
+        linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 50%, var(--bg-0) 100%);
+      min-height: 100vh;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      background: rgba(3, 9, 32, 0.7);
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 18px;
+      color: var(--text-1);
+      font-size: 14px;
+    }
+
+    .nav-links a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .nav-links a.active {
+      color: var(--glow);
+      font-weight: 600;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--glow);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .title-block h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .title-block p {
+      margin: 0;
+      color: var(--text-1);
+      font-size: 15px;
+    }
+
+    .task-search {
+      margin-bottom: 28px;
+      padding: 22px;
+      border: 1px solid rgba(107, 220, 255, 0.3);
+      border-radius: 18px;
+      background: rgba(12, 27, 69, 0.82);
+      box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
+    }
+
+    .task-search h2 {
+      margin: 0 0 7px;
+      font-size: 20px;
+    }
+
+    /* ---- 精准检索开关 ---- */
+    .task-search-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 7px;
+    }
+    .task-search-head h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .precise-toggle-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    /* 进入数据量衡按钮：参考科学问题支撑数据集 chip 样式 */
+    .enter-compare-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: auto;
+    }
+    .enter-compare-btn {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 20px;
+      background: rgba(140, 235, 220, 0.12);
+      color: #8cebdc;
+      font-size: 12.5px;
+      text-decoration: none;
+      border: 1px solid rgba(140, 235, 220, 0.25);
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .enter-compare-btn:hover { background: rgba(140, 235, 220, 0.25); }
+    /* 进入数据量衡旁的问号：tooltip 右对齐避免溢出右边缘 */
+    .enter-compare-help::after {
+      left: auto;
+      right: 0;
+      transform: none;
+      white-space: normal;
+      width: max-content;
+      max-width: 240px;
+      text-align: left;
+    }
+    /* 检索结果条目右上角"加入数据量衡"小按钮 */
+    .add-to-compare-btn {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 12px;
+      border-radius: 20px;
+      background: rgba(140, 235, 220, 0.10);
+      color: #8cebdc;
+      font-size: 11.5px;
+      line-height: 1.4;
+      border: 1px solid rgba(140, 235, 220, 0.25);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .add-to-compare-btn:hover { background: rgba(140, 235, 220, 0.25); }
+    .add-to-compare-btn.added { opacity: 0.55; cursor: default; }
+    /* 检索候选区上限弹窗 */
+    .compare-cap-modal-mask {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(2, 6, 18, 0.6);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .compare-cap-modal {
+      position: relative;
+      background: rgba(10, 18, 50, 0.98);
+      border: 1px solid rgba(107, 220, 255, 0.3);
+      border-radius: 14px;
+      padding: 26px 30px 22px;
+      max-width: 380px;
+      color: var(--text-0);
+      font-size: 14px;
+      line-height: 1.7;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+    }
+    .compare-cap-modal .cap-close {
+      position: absolute; top: 10px; right: 12px;
+      background: transparent; border: none; color: var(--text-1);
+      font-size: 18px; cursor: pointer; line-height: 1; padding: 0; opacity: 0.6;
+    }
+    .compare-cap-modal .cap-close:hover { opacity: 1; color: #ff6b8a; }
+    .compare-cap-modal .cap-ok {
+      margin-top: 18px;
+      padding: 7px 22px;
+      border-radius: 999px;
+      border: 1px solid rgba(140, 235, 220, 0.3);
+      background: rgba(140, 235, 220, 0.15);
+      color: #8cebdc;
+      font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+    .compare-cap-modal .cap-ok:hover { background: rgba(140, 235, 220, 0.28); }
+    .precise-switch {
+      position: relative;
+      width: 46px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(107, 220, 255, 0.4);
+      background: transparent;
+      cursor: pointer;
+      transition: background 0.25s ease, border-color 0.25s ease;
+      padding: 0;
+      flex: none;
+    }
+    .precise-switch .knob {
+      position: absolute;
+      top: 50%;
+      left: 3px;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #9fb4db;
+      transition: left 0.25s ease, background 0.25s ease;
+    }
+    .precise-switch.on {
+      background: linear-gradient(135deg, var(--glow), var(--accent));
+      border-color: var(--accent);
+    }
+    .precise-switch.on .knob {
+      left: calc(100% - 21px);
+      background: #ffffff;
+    }
+    .precise-label {
+      font-size: 12.5px;
+      color: var(--text-1);
+      user-select: none;
+    }
+    .precise-help {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid rgba(159, 180, 219, 0.6);
+      color: #9fb4db;
+      font-size: 11px;
+      cursor: help;
+      user-select: none;
+    }
+    .precise-help::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      background: rgba(6, 19, 56, 0.97);
+      border: 1px solid rgba(107, 220, 255, 0.4);
+      color: var(--text-1);
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 50;
+    }
+    .precise-help:hover::after {
+      opacity: 1;
+    }
+    /* 关闭精准检索时，非结果标签页置灰提示 */
+    .task-tab-panel .panel-locked {
+      padding: 30px 16px;
+      text-align: center;
+      color: #9fb4db;
+      font-size: 13px;
+    }
+
+    .task-search > p {
+      margin: 0 0 16px;
+      color: var(--text-1);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .task-search-form {
+      display: flex;
+      gap: 10px;
+    }
+
+    .task-search-form input {
+      min-width: 0;
+      flex: 1;
+      padding: 12px 15px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 12px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.09);
+      color: var(--text-0);
+      font-size: 14px;
+    }
+
+    .task-search-form input:focus {
+      border-color: var(--glow);
+      box-shadow: 0 0 0 3px rgba(107, 220, 255, 0.12);
+    }
+
+    .task-search-form button {
+      padding: 0 20px;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--glow), var(--accent));
+      color: #061338;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .task-search-form button:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    .task-status {
+      min-height: 20px;
+      margin: 10px 0 0;
+      color: #9fb4db;
+      font-size: 12px;
+    }
+
+    .task-status.error {
+      color: #ffb4b4;
+    }
+
+    .task-progress {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+
+    .task-progress li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      color: var(--text-1);
+      font-size: 12.5px;
+      line-height: 1.5;
+      opacity: 0;
+      animation: progressIn 0.3s ease forwards;
+    }
+
+    @keyframes progressIn {
+      to { opacity: 1; }
+    }
+
+    .task-progress li .dot {
+      flex: none;
+      width: 7px;
+      height: 7px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .task-progress li.active .dot {
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .task-progress li.done {
+      color: #9fb4db;
+    }
+
+    .task-progress li.done .dot {
+      background: #5ec98a;
+      animation: none;
+    }
+
+    /* ---- 进度栏折叠 ---- */
+    .task-progress-toggle {
+      display: none; /* 检索完成后才显示 */
+      align-items: center;
+      gap: 6px;
+      margin: 10px 0 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #9fb4db;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .task-progress-toggle.show {
+      display: flex;
+    }
+
+    .task-progress-toggle .caret {
+      display: inline-block;
+      transition: transform 0.2s;
+      font-size: 10px;
+    }
+
+    .task-progress-toggle.expanded .caret {
+      transform: rotate(90deg);
+    }
+
+    .task-progress-toggle:hover {
+      color: var(--text-0);
+    }
+
+    .task-progress.collapsed {
+      display: none;
+    }
+
+    .task-results {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    /* ---- 检索结果标签页 ---- */
+    .task-tabs {
+      display: none; /* 检索完成后才显示 */
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding-bottom: 0;
+    }
+
+    .task-tabs.show {
+      display: flex;
+    }
+
+    .task-tab {
+      padding: 8px 14px;
+      border: none;
+      background: transparent;
+      color: var(--text-1);
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .task-tab:hover {
+      color: var(--text-0);
+    }
+
+    .task-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .task-tab-panels {
+      margin-top: 12px;
+    }
+
+    .task-tab-panel {
+      display: none;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .task-tab-panel.active {
+      display: block;
+    }
+
+    /* 面板滚动条样式 */
+    .task-tab-panel::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .task-tab-panel::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 4px;
+    }
+
+    .task-tab-panel .panel-text {
+      color: var(--text-1);
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    /* 研究意义、数据关联：按语义句段换行，每段首行缩进以提升长文本可读性。 */
+    .task-tab-panel .panel-text.panel-readable {
+      white-space: normal;
+    }
+
+    .task-tab-panel .panel-readable p {
+      margin: 0 0 0.7em;
+      text-indent: 2em;
+    }
+
+    .task-tab-panel .panel-readable p:last-child {
+      margin-bottom: 0;
+    }
+
+    .task-tab-panel .panel-readable p.is-list-item {
+      padding-left: 1.2em;
+      text-indent: -1.2em;
+    }
+
+    .task-tab-panel .panel-list {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--text-1);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .task-tab-panel .panel-list li {
+      margin-bottom: 8px;
+    }
+
+    .task-tab-panel .panel-subtitle {
+      color: var(--text-0);
+      font-size: 13px;
+      font-weight: 600;
+      margin: 12px 0 6px;
+    }
+
+    .task-tab-panel .panel-loading {
+      color: #9fb4db;
+      font-size: 13px;
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    /* 科学问题：数据集标签 */
+    .panel-question {
+      margin-bottom: 14px;
+    }
+
+    .panel-question .q-text {
+      color: var(--text-1);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .panel-question .q-datasets {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .panel-question .q-ds-label {
+      color: #9fb4db;
+      font-size: 11.5px;
+    }
+
+    .panel-question .q-ds-link {
+      display: inline-block;
+      max-width: 320px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+      padding: 2px 9px;
+      border-radius: 20px;
+      background: rgba(140, 235, 220, 0.12);
+      color: #8cebdc;
+      font-size: 11.5px;
+      text-decoration: none;
+      border: 1px solid rgba(140, 235, 220, 0.25);
+      transition: background 0.2s;
+    }
+
+    .panel-question .q-ds-link:hover {
+      background: rgba(140, 235, 220, 0.25);
+    }
+
+    .task-result {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 13px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .task-result-rank {
+      color: var(--accent);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    /* top-6 ~ top-10 标号：暗灰色（与图谱非 top5 数据集节点灰 #5a6f96 一致） */
+    .task-result-rank.dim {
+      color: #5a6f96;
+    }
+
+    .task-result-name {
+      color: var(--text-0);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .task-result-description {
+      margin-top: 5px;
+      color: var(--text-1);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .task-result-score {
+      color: #8cebdc;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    /* ---- 数据集知识图谱 ---- */
+    .task-tab-panel[data-panel="graph"] {
+      max-height: none; /* 图谱面板不限制滚动高度，用固定高度容器 */
+      overflow: visible;
+      padding-right: 0;
+    }
+
+    .graph-wrap {
+      position: relative;
+      width: 100%;
+      height: 480px;
+      border-radius: 12px;
+      background: rgba(3, 9, 32, 0.5);
+      border: 1px solid rgba(107, 220, 255, 0.15);
+      overflow: hidden;
+    }
+
+    .graph-wrap svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    .graph-wrap svg:active {
+      cursor: grabbing;
+    }
+
+    .graph-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #9fb4db;
+      font-size: 13px;
+    }
+
+    .graph-back-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 5;
+      padding: 4px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(107, 220, 255, 0.35);
+      background: rgba(12, 27, 69, 0.85);
+      color: var(--glow);
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .graph-back-btn:hover {
+      background: rgba(107, 220, 255, 0.18);
+    }
+
+    /* 左上角按钮组容器：多个按钮并排 */
+    .graph-btn-group {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 5;
+      display: flex;
+      gap: 8px;
+    }
+
+    /* 按钮组内的按钮取消单独绝对定位（由容器定位） */
+    .graph-btn-group .graph-back-btn {
+      position: static;
+    }
+
+    /* 按钮禁用态（推理动画播放中 / 无推理数据） */
+    .graph-back-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .graph-back-btn:disabled:hover {
+      background: rgba(12, 27, 69, 0.85);
+    }
+
+    .graph-legend {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      z-index: 5;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(3, 9, 32, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      width: min(270px, calc(100% - 24px));
+      font-size: 11px;
+      color: var(--text-1);
+      line-height: 1.8;
+      pointer-events: none;
+    }
+
+    /* 数据集子视图的图例默认收起，展开时位于右下角开关上方。 */
+    .graph-legend.is-toggleable {
+      bottom: 42px;
+    }
+
+    .graph-legend-toggle {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      z-index: 6;
+      padding: 4px 10px;
+      border: 1px solid rgba(107, 220, 255, 0.35);
+      border-radius: 16px;
+      background: rgba(12, 27, 69, 0.88);
+      color: var(--glow);
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .graph-legend-toggle:hover {
+      background: rgba(107, 220, 255, 0.18);
+    }
+
+    /* 关系视图右上角：双路召回到 LLM 重排的 Top-5 回放榜单 */
+    .graph-ranking-replay {
+      position: absolute;
+      top: 42px;
+      right: 10px;
+      z-index: 5;
+      width: min(270px, calc(100% - 24px));
+      padding: 10px;
+      border: 1px solid rgba(107, 220, 255, 0.28);
+      border-radius: 10px;
+      background: rgba(3, 9, 32, 0.84);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      font-size: 11px;
+      pointer-events: none;
+    }
+
+    .graph-ranking-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 6;
+      padding: 4px 10px;
+      border: 1px solid rgba(107, 220, 255, 0.35);
+      border-radius: 16px;
+      background: rgba(12, 27, 69, 0.88);
+      color: var(--glow);
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .graph-ranking-toggle:hover {
+      background: rgba(107, 220, 255, 0.18);
+    }
+
+    .graph-ranking-replay-title {
+      margin-bottom: 7px;
+      color: #bfeaff;
+      font-size: inherit;
+      font-weight: 600;
+      transition: opacity 160ms ease;
+    }
+
+    .graph-ranking-replay-list {
+      display: grid;
+      gap: 4px;
+      transition: opacity 160ms ease;
+    }
+
+    .graph-ranking-replay-item {
+      min-height: 25px;
+      padding: 3px 6px;
+      overflow: hidden;
+      border-radius: 6px;
+      color: var(--text-0);
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      will-change: transform, opacity;
+    }
+
+    .graph-ranking-replay-item.entering {
+      opacity: 0;
+    }
+
+    .graph-ranking-replay-title.is-fading,
+    .graph-ranking-replay-list.is-fading {
+      opacity: 0;
+    }
+
+    .graph-legend .lg-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .graph-legend .lg-line {
+      display: inline-block;
+      width: 16px;
+      height: 0;
+      border-top: 2px solid rgba(107, 220, 255, 0.5);
+      margin-right: 6px;
+      vertical-align: 3px;
+    }
+
+    .graph-tooltip {
+      position: absolute;
+      z-index: 10;
+      display: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(3, 9, 32, 0.92);
+      border: 1px solid rgba(107, 220, 255, 0.3);
+      color: var(--text-0);
+      font-size: 12px;
+      line-height: 1.5;
+      pointer-events: none;
+      max-width: 260px;
+      white-space: pre-line;
+    }
+
+    .graph-node-label {
+      fill: var(--text-1);
+      font-size: 10px;
+      pointer-events: none;
+      text-anchor: middle;
+    }
+
+    @media (max-width: 980px) {
+      .task-search-form {
+        flex-direction: column;
+      }
+
+      .task-search-form button {
+        min-height: 42px;
+      }
+
+      .task-result {
+        grid-template-columns: 30px minmax(0, 1fr);
+      }
+
+      .task-result-score {
+        grid-column: 2;
+      }
+
+      .add-to-compare-btn {
+        grid-column: 2;
+        justify-self: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-left">
+      <div class="brand"><span style="position:relative;display:inline-block;">SciDataIndex<img src="images/opencompass.svg" alt="OpenCompass" style="position:absolute;top:-8px;right:0;height:11px;width:auto;opacity:0.85;"></span></div>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="data_ranks/earth_science.html">数据榜单</a>
+        <a href="dataset_list.html">数据列表</a>
+        <a href="task_search.html" class="active">任务检索</a>
+        <a href="compare.html">数据量衡</a>
+        <a href="evaluation.html">技术说明</a>
+        <a href="about.html">关于我们</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="header">
+      <div class="title-block">
+        <h1>任务检索</h1>
+        <p>描述你的研究任务，系统将通过三阶段图推理检索，从全部数据集中返回最相关的 10 项。</p>
+      </div>
+    </div>
+
+    <section class="task-search" aria-labelledby="taskSearchTitle">
+      <div class="task-search-head">
+        <h2 id="taskSearchTitle">按研究任务检索数据集</h2>
+        <span class="precise-toggle-wrap">
+          <button type="button" class="precise-switch on" id="preciseSwitch" role="switch" aria-checked="true" aria-label="开启精准检索">
+            <span class="knob"></span>
+          </button>
+          <span class="precise-label">开启精准检索</span>
+          <span class="precise-help" data-tip="开启后采用三阶段图检索，关闭时采用向量检索">?</span>
+        </span>
+        <span class="enter-compare-wrap">
+          <a class="enter-compare-btn" href="compare.html" target="_blank" rel="noopener noreferrer">进入数据量衡</a>
+          <span class="precise-help enter-compare-help" data-tip="可将检索结果加入数据衡量，完成跨查询数据集分析">?</span>
+        </span>
+      </div>
+      <p id="taskSearchDesc">描述你的研究任务，系统将通过三阶段图推理检索，从全部数据集中返回最相关的 10 项。</p>
+      <form class="task-search-form" id="taskSearchForm">
+        <input id="taskQuery" type="text" maxlength="1000" autocomplete="off" placeholder="例如：寻找用于遥感图像目标检测的数据集" />
+        <button id="taskSearchButton" type="submit">查找 Top-10</button>
+      </form>
+      <p class="task-status" id="taskSearchStatus" role="status"></p>
+      <button type="button" class="task-progress-toggle" id="taskProgressToggle">
+        <span class="caret">▶</span><span id="taskProgressToggleText">检索过程</span>
+      </button>
+      <ul class="task-progress" id="taskSearchProgress"></ul>
+
+      <!-- 检索结果标签页（检索完成后显示） -->
+      <div class="task-tabs" id="taskTabs">
+        <button class="task-tab active" data-tab="results">检索结果</button>
+        <button class="task-tab" data-tab="graph">知识图谱</button>
+        <button class="task-tab" data-tab="relation">数据关联</button>
+        <button class="task-tab" data-tab="questions">科学问题</button>
+        <button class="task-tab" data-tab="value">研究意义</button>
+        <button class="task-tab" data-tab="application">应用场景</button>
+      </div>
+      <div class="task-tab-panels" id="taskTabPanels">
+        <div class="task-tab-panel active" data-panel="results">
+          <div class="task-results" id="taskSearchResults"></div>
+        </div>
+        <div class="task-tab-panel" data-panel="graph">
+          <div class="graph-wrap" id="graphWrap">
+            <div class="graph-placeholder">完成检索后展示数据集知识图谱</div>
+          </div>
+        </div>
+        <div class="task-tab-panel" data-panel="relation"></div>
+        <div class="task-tab-panel" data-panel="questions"></div>
+        <div class="task-tab-panel" data-panel="value"></div>
+        <div class="task-tab-panel" data-panel="application"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const SUBJECTS = [
+      { label: "地球科学", key: "earth_science" },
+      { label: "生命科学", key: "life_science" },
+      { label: "物质科学", key: "physical_science" },
+      { label: "神经科学", key: "neuro_science" },
+      { label: "化学科学", key: "chemistry_science" },
+      { label: "材料科学", key: "material_science" },
+      { label: "天文科学", key: "astronomy_science" },
+      { label: "通识科学", key: "general_science" },
+      { label: "计算机科学", key: "computer_science" }
+    ];
+
+    const SUBJECT_LABELS = Object.fromEntries(SUBJECTS.map(subject => [subject.key, subject.label]));
+
+    // ---- 检索候选区（数据量衡联动）：localStorage 读写 + 上限弹窗 ----
+    const COMPARE_CAND_KEY = "scidataindex_compare_candidates";
+    const COMPARE_CAND_MAX = 12;
+    function readCompareCandidates() {
+      try {
+        const raw = localStorage.getItem(COMPARE_CAND_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch { return []; }
+    }
+    function writeCompareCandidates(list) {
+      try { localStorage.setItem(COMPARE_CAND_KEY, JSON.stringify(list)); } catch {}
+    }
+    // 加入候选区：去重（name+catKey），满 12 弹窗。返回 "added" | "exists" | "full"
+    function addCompareCandidate(cand) {
+      const list = readCompareCandidates();
+      if (list.some(c => c.name === cand.name && c.catKey === cand.catKey)) return "exists";
+      if (list.length >= COMPARE_CAND_MAX) return "full";
+      list.push(cand);
+      writeCompareCandidates(list);
+      return "added";
+    }
+    // 上限弹窗（确定 / 右上角叉关闭）
+    function showCompareCapModal() {
+      if (document.getElementById("compareCapModalMask")) return;
+      const mask = document.createElement("div");
+      mask.className = "compare-cap-modal-mask";
+      mask.id = "compareCapModalMask";
+      mask.innerHTML = `
+        <div class="compare-cap-modal" role="dialog" aria-modal="true">
+          <button type="button" class="cap-close" aria-label="关闭">×</button>
+          <div>检索候选区数据条目达到上限，请清理完毕后再添加。</div>
+          <div style="text-align:center;"><button type="button" class="cap-ok">确定</button></div>
+        </div>`;
+      const close = () => mask.remove();
+      mask.querySelector(".cap-close").addEventListener("click", close);
+      mask.querySelector(".cap-ok").addEventListener("click", close);
+      mask.addEventListener("click", e => { if (e.target === mask) close(); });
+      document.body.appendChild(mask);
+    }
+
+
+    const taskSearchForm = document.getElementById("taskSearchForm");
+    const taskQuery = document.getElementById("taskQuery");
+    const taskSearchButton = document.getElementById("taskSearchButton");
+    const taskSearchStatus = document.getElementById("taskSearchStatus");
+    const taskSearchProgress = document.getElementById("taskSearchProgress");
+    const taskProgressToggle = document.getElementById("taskProgressToggle");
+    const taskProgressToggleText = document.getElementById("taskProgressToggleText");
+    const taskSearchResults = document.getElementById("taskSearchResults");
+    const taskTabs = document.getElementById("taskTabs");
+    const taskTabPanels = document.getElementById("taskTabPanels");
+
+    // 渲染后端三阶段检索结果
+    function renderBackendResults(results) {
+      taskSearchResults.replaceChildren();
+      results.forEach((item, index) => {
+        const result = document.createElement("article");
+        result.className = "task-result";
+
+        const rank = document.createElement("div");
+        rank.className = "task-result-rank" + (index >= 5 ? " dim" : "");
+        rank.textContent = String(index + 1).padStart(2, "0");
+
+        const content = document.createElement("div");
+        const link = document.createElement("a");
+        link.className = "task-result-name";
+        // 跳详情页：用后端返回的 name/file/category
+        const params = new URLSearchParams();
+        params.set("name", item.name || item.dataset_id);
+        if (item.file) params.set("file", item.file);
+        if (item.category) params.set("category", item.category);
+        link.href = `dataset_detail.html?${params.toString()}`;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = item.name || item.dataset_id;
+        const description = document.createElement("div");
+        description.className = "task-result-description";
+        const catLabel = SUBJECT_LABELS[item.category] || item.category || "";
+        description.textContent = catLabel ? `${catLabel} · ${item.description || ""}` : (item.description || "");
+        content.append(link, description);
+
+        const scoreElement = document.createElement("div");
+        scoreElement.className = "task-result-score";
+        scoreElement.textContent = `相关度 ${Number(item.score).toFixed(3)}`;
+
+        // 右上角"加入数据量衡"小按钮
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "add-to-compare-btn";
+        addBtn.textContent = "加入数据量衡进行分析";
+        addBtn.addEventListener("click", () => {
+          const res = addCompareCandidate({
+            name: item.name || item.dataset_id,
+            catKey: item.category || "",
+            file: item.file || null
+          });
+          if (res === "full") { showCompareCapModal(); return; }
+          if (res === "added") { addBtn.classList.add("added"); addBtn.textContent = "已加入数据量衡"; }
+          else { addBtn.classList.add("added"); addBtn.textContent = "已在候选区"; }
+        });
+        // 已在候选区的条目，初始即标记
+        if (readCompareCandidates().some(c => c.name === (item.name || item.dataset_id) && c.catKey === (item.category || ""))) {
+          addBtn.classList.add("added");
+          addBtn.textContent = "已在候选区";
+        }
+
+        result.append(rank, content, scoreElement, addBtn);
+        taskSearchResults.appendChild(result);
+      });
+    }
+
+    // ---- 标签页切换 ----
+    taskTabs.addEventListener("click", (event) => {
+      const tab = event.target.closest(".task-tab");
+      if (!tab) return;
+      const key = tab.dataset.tab;
+      taskTabs.querySelectorAll(".task-tab").forEach(t => t.classList.toggle("active", t === tab));
+      taskTabPanels.querySelectorAll(".task-tab-panel").forEach(p => {
+        p.classList.toggle("active", p.dataset.panel === key);
+      });
+      // 图谱面板惰性渲染：首次切换到该标签且有图数据时才渲染
+      if (key === "graph" && graphState.data && !graphState.rendered) {
+        renderGraph(graphState.data, graphState.datasetLinks);
+      }
+    });
+
+    // 显示标签栏（检索结果生成后调用），并把非结果面板置为"分析中"占位
+    function showTabs() {
+      taskTabs.classList.add("show");
+      // 默认停留在"检索结果"
+      taskTabs.querySelectorAll(".task-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === "results"));
+      taskTabPanels.querySelectorAll(".task-tab-panel").forEach(p => {
+        p.classList.toggle("active", p.dataset.panel === "results");
+      });
+      ["value", "questions", "relation", "application"].forEach(key => {
+        const panel = taskTabPanels.querySelector(`[data-panel="${key}"]`);
+        panel.innerHTML = `<div class="panel-loading">正在进行科学问题分析…</div>`;
+      });
+      // 图谱面板：检索进行中显示占位提示
+      const graphPanel = taskTabPanels.querySelector('[data-panel="graph"]');
+      graphPanel.innerHTML = `<div class="graph-wrap" id="graphWrap"><div class="graph-placeholder">完成检索后展示数据集知识图谱</div></div>`;
+    }
+
+    // 隐藏标签栏（开始新检索时调用）
+    function hideTabs() {
+      taskTabs.classList.remove("show");
+    }
+
+    // 将 LLM 返回的长文本按原有换行和中文句末标点拆成可读段落。
+    // 全程使用 textContent，避免把模型文本当作 HTML 注入页面。
+    function renderReadableText(container, text) {
+      const paragraphs = String(text || "")
+        .replace(/\r\n?/g, "\n")
+        .split(/\n+/)
+        .flatMap(line => line.trim().split(/(?<=[。！？；])/u))
+        .map(part => part.trim())
+        .filter(Boolean);
+      container.replaceChildren();
+      paragraphs.forEach(part => {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = part;
+        if (/^(?:[-•*]|\d+[.、])\s*/.test(part)) {
+          paragraph.classList.add("is-list-item");
+        }
+        container.appendChild(paragraph);
+      });
+    }
+
+    // 科学分析完成后，填充 4 个分析面板
+    function renderAnalysisPanels(analysis, datasetLinks) {
+      analysis = analysis || {};
+      datasetLinks = datasetLinks || {};
+      // 研究意义
+      const valuePanel = taskTabPanels.querySelector('[data-panel="value"]');
+      const sciValue = (analysis.scientific_value || "").trim();
+      valuePanel.innerHTML = sciValue
+        ? `<div class="panel-text panel-readable"></div>`
+        : `<div class="panel-loading">暂无分析结果</div>`;
+      if (sciValue) renderReadableText(valuePanel.querySelector(".panel-text"), sciValue);
+
+      // 科学问题（问题 + 可点击的数据集链接）
+      const qPanel = taskTabPanels.querySelector('[data-panel="questions"]');
+      const questions = analysis.research_questions || [];
+      if (!questions.length) {
+        qPanel.innerHTML = `<div class="panel-loading">暂无分析结果</div>`;
+      } else {
+        qPanel.replaceChildren();
+        questions.forEach((q, idx) => {
+          // 兼容两种格式：纯字符串 或 {question, datasets}
+          const qText = (typeof q === "string") ? q : (q.question || "");
+          const qDatasets = (typeof q === "object" && Array.isArray(q.datasets)) ? q.datasets : [];
+
+          const item = document.createElement("div");
+          item.className = "panel-question";
+
+          const textEl = document.createElement("div");
+          textEl.className = "q-text";
+          textEl.textContent = `${idx + 1}. ${qText}`;
+          item.appendChild(textEl);
+
+          if (qDatasets.length) {
+            const dsWrap = document.createElement("div");
+            dsWrap.className = "q-datasets";
+            const label = document.createElement("span");
+            label.className = "q-ds-label";
+            label.textContent = "支撑数据集：";
+            dsWrap.appendChild(label);
+            qDatasets.forEach(dsName => {
+              const info = datasetLinks[dsName];
+              const link = document.createElement("a");
+              link.className = "q-ds-link";
+              if (info) {
+                const params = new URLSearchParams();
+                params.set("name", info.name || dsName);
+                if (info.file) params.set("file", info.file);
+                if (info.category) params.set("category", info.category);
+                link.href = `dataset_detail.html?${params.toString()}`;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.textContent = info.name || dsName;
+                link.title = info.name || dsName;
+              } else {
+                // 映射不到（LLM可能返回了非slug名称）：退化为纯文本标签，不跳转
+                link.textContent = dsName;
+                link.removeAttribute("href");
+                link.style.cursor = "default";
+              }
+              dsWrap.appendChild(link);
+            });
+            item.appendChild(dsWrap);
+          }
+          qPanel.appendChild(item);
+        });
+      }
+
+      // 数据关联
+      const rPanel = taskTabPanels.querySelector('[data-panel="relation"]');
+      const relation = (analysis.dataset_relationships || "").trim();
+      rPanel.innerHTML = relation
+        ? `<div class="panel-text panel-readable"></div>`
+        : `<div class="panel-loading">暂无分析结果</div>`;
+      if (relation) renderReadableText(rPanel.querySelector(".panel-text"), relation);
+
+      // 应用场景（研究方向 + 应用场景 两组合并）
+      const aPanel = taskTabPanels.querySelector('[data-panel="application"]');
+      const directions = analysis.research_directions || [];
+      const scenarios = analysis.application_scenarios || [];
+      if (!directions.length && !scenarios.length) {
+        aPanel.innerHTML = `<div class="panel-loading">暂无分析结果</div>`;
+      } else {
+        let html = "";
+        if (directions.length) {
+          html += `<div class="panel-subtitle">潜在研究方向</div><ol class="panel-list">${directions.map(() => `<li data-k="d"></li>`).join("")}</ol>`;
+        }
+        if (scenarios.length) {
+          html += `<div class="panel-subtitle">应用场景</div><ol class="panel-list">${scenarios.map(() => `<li data-k="s"></li>`).join("")}</ol>`;
+        }
+        aPanel.innerHTML = html;
+        const dItems = aPanel.querySelectorAll('li[data-k="d"]');
+        dItems.forEach((li, i) => { li.textContent = directions[i]; });
+        const sItems = aPanel.querySelectorAll('li[data-k="s"]');
+        sItems.forEach((li, i) => { li.textContent = scenarios[i]; });
+      }
+    }
+
+    // ---- 数据集知识图谱（D3 力导向图，参照 Connected Papers 交互） ----
+    // 注意：showTabs 会重建 #graphWrap 元素，所以每次渲染时动态获取，不缓存引用
+    function getGraphWrap() {
+      return document.getElementById("graphWrap");
+    }
+    // 图谱全局状态：data=原始图数据，datasetLinks=slug映射，rendered=是否已首次渲染，view=当前视图，centerId=下钻中心数据集id，reasoning=推理过程数据（hop 波次点亮动画用）
+    const graphState = {
+      data: null,
+      datasetLinks: {},
+      rendered: false,
+      view: "global",
+      centerId: null,
+      simulation: null,
+      reasoning: null,
+      rankings: null
+    };
+
+    // 概念节点按 semantic_type 着色
+    const CONCEPT_COLORS = {
+      domain: "#f2b134",
+      subdomain: "#e8873a",
+      subject: "#d96bd0",
+      task: "#8cebdc",
+      method: "#9d8cff",
+      data_type: "#7fb2ff",
+      measurement: "#6bdcff",
+      annotation: "#a3d977",
+      temporal_coverage: "#c9b458",
+      spatial_coverage: "#58c4a0",
+      format: "#b0a08c",
+      framework: "#ff8fa3"
+    };
+    const CONCEPT_COLOR_DEFAULT = "#9fb4db";
+    // 下钻视图里直接展示的强概念类型
+    const STRONG_SEMANTIC_TYPES = new Set(["domain", "subdomain", "subject", "task", "method"]);
+
+    // 数据集节点显示名：优先 dataset_links 里的 name，否则用 slug
+    function dsDisplayName(slug) {
+      const info = graphState.datasetLinks[slug];
+      return (info && info.name) ? info.name : slug;
+    }
+
+    // 跳详情页 URL（与检索结果列表同款构造方式）
+    function dsDetailUrl(slug) {
+      const info = graphState.datasetLinks[slug] || {};
+      const params = new URLSearchParams();
+      params.set("name", info.name || slug);
+      if (info.file) params.set("file", info.file);
+      if (info.category) params.set("category", info.category);
+      return `dataset_detail.html?${params.toString()}`;
+    }
+
+    // 右上角 Top-5 回放面板：只展示数据集标题。动画使用 FLIP，让保留项
+    // 平滑移动到 LLM 重排后的新位置；出入 Top-5 的项分别淡出和淡入。
+    function createRankingReplay(rankings) {
+      const initial = Array.isArray(rankings?.initial) ? rankings.initial.slice(0, 5) : [];
+      const final = Array.isArray(rankings?.final) ? rankings.final.slice(0, 5) : [];
+      if (!initial.length || !final.length) return null;
+
+      const panel = document.createElement("div");
+      panel.className = "graph-ranking-replay";
+      const title = document.createElement("div");
+      title.className = "graph-ranking-replay-title";
+      const list = document.createElement("div");
+      list.className = "graph-ranking-replay-list";
+      panel.append(title, list);
+
+      const makeRow = (id, entering = false) => {
+        const row = document.createElement("div");
+        row.className = "graph-ranking-replay-item" + (entering ? " entering" : "");
+        row.dataset.datasetId = id;
+        const name = dsDisplayName(id);
+        row.textContent = name;
+        row.title = name;
+        return row;
+      };
+      const render = (ids, titleText) => {
+        title.textContent = titleText;
+        list.replaceChildren(...ids.map(id => makeRow(id)));
+      };
+      const fadeToInitial = () => {
+        title.classList.add("is-fading");
+        list.classList.add("is-fading");
+        window.setTimeout(() => {
+          render(initial, "双路粗召回 Top-5");
+          title.classList.remove("is-fading");
+          list.classList.remove("is-fading");
+        }, 170);
+      };
+      const fadeToFinalTitle = () => {
+        title.classList.add("is-fading");
+        window.setTimeout(() => {
+          title.textContent = "LLM 重排 Top-5";
+          title.classList.remove("is-fading");
+        }, 170);
+      };
+      // 关系视图默认展示最终推荐；回放才回到双路粗召回起点。
+      render(final, "LLM 重排 Top-5");
+
+      return {
+        panel,
+        resetToInitial() {
+          delete panel.dataset.finalized;
+          fadeToInitial();
+        },
+        replayFinal() {
+          if (panel.dataset.finalized === "true") return;
+          panel.dataset.finalized = "true";
+          fadeToFinalTitle();
+          const rowsById = new Map(Array.from(list.children).map(row => [row.dataset.datasetId, row]));
+          const leaving = Array.from(rowsById.values())
+            .filter(row => !final.includes(row.dataset.datasetId));
+          leaving.forEach(row => {
+            row.style.transition = "opacity 200ms ease, transform 200ms ease";
+            row.style.opacity = "0";
+            row.style.transform = "translateX(12px)";
+          });
+
+          window.setTimeout(() => {
+            const firstPositions = new Map();
+            final.forEach(id => {
+              const row = rowsById.get(id);
+              if (row) firstPositions.set(id, row.getBoundingClientRect());
+            });
+            leaving.forEach(row => row.remove());
+            final.forEach(id => {
+              const row = rowsById.get(id) || makeRow(id, true);
+              list.appendChild(row);
+            });
+            final.forEach(id => {
+              const row = Array.from(list.children).find(item => item.dataset.datasetId === id);
+              const first = firstPositions.get(id);
+              if (!first) {
+                requestAnimationFrame(() => {
+                  row.style.transition = "opacity 320ms ease";
+                  row.classList.remove("entering");
+                });
+                return;
+              }
+              const last = row.getBoundingClientRect();
+              row.style.transition = "none";
+              row.style.transform = `translateY(${first.top - last.top}px)`;
+              requestAnimationFrame(() => {
+                row.style.transition = "transform 520ms cubic-bezier(.2,.8,.2,1)";
+                row.style.transform = "translateY(0)";
+              });
+            });
+          }, 210);
+        }
+      };
+    }
+
+    // 从概念节点的 datasets 字段计算数据集之间的共享概念数（用于全局视图连线）
+    function computeSharedLinks(datasetIds, conceptNodes) {
+      // pairKey -> {source, target, count}
+      const pairMap = new Map();
+      conceptNodes.forEach(c => {
+        const list = (c.datasets || []).filter(id => datasetIds.has(id));
+        for (let i = 0; i < list.length; i++) {
+          for (let j = i + 1; j < list.length; j++) {
+            const a = list[i], b = list[j];
+            const key = a < b ? `${a}||${b}` : `${b}||${a}`;
+            if (!pairMap.has(key)) {
+              pairMap.set(key, { source: a, target: b, count: 0 });
+            }
+            pairMap.get(key).count += 1;
+          }
+        }
+      });
+      return Array.from(pairMap.values());
+    }
+
+    // 基于合并大图的完整边集，计算数据集两两之间的最短路径跳数（BFS）。
+    // 返回 [{source, target, hops}]，包含所有连通数据集对（hops>=2，不限上限）。
+    // 跳数含义：2跳=共享1个概念（数据集-概念-数据集），3跳=经概念间1条本体边，4跳=经2条本体边，>4跳=更远的间接关联。
+    function computePathLinks(datasetIds, allLinks, maxHops) {
+      // maxHops 仅用于控制 BFS 扩展深度（性能），设一个较大值即可；不连通的不会被返回
+      maxHops = maxHops || 20;
+      // 建无向邻接表（兼容 source/target 是字符串 id 或 D3 处理后的对象）
+      const adjacency = new Map();
+      const idOf = v => (typeof v === "object" && v !== null) ? v.id : v;
+      (allLinks || []).forEach(l => {
+        const s = idOf(l.source), t = idOf(l.target);
+        if (s == null || t == null) return;
+        if (!adjacency.has(s)) adjacency.set(s, new Set());
+        if (!adjacency.has(t)) adjacency.set(t, new Set());
+        adjacency.get(s).add(t);
+        adjacency.get(t).add(s);
+      });
+      // BFS 求 src 到各数据集的最短跳数
+      function bfsHops(src) {
+        const dist = new Map([[src, 0]]);
+        const queue = [src];
+        while (queue.length) {
+          const cur = queue.shift();
+          const d = dist.get(cur);
+          if (d >= maxHops) continue;
+          const nbrs = adjacency.get(cur);
+          if (!nbrs) continue;
+          nbrs.forEach(nb => {
+            if (!dist.has(nb)) {
+              dist.set(nb, d + 1);
+              queue.push(nb);
+            }
+          });
+        }
+        return dist;
+      }
+      const result = [];
+      const dsList = Array.from(datasetIds);
+      for (let i = 0; i < dsList.length; i++) {
+        const dist = bfsHops(dsList[i]);
+        for (let j = i + 1; j < dsList.length; j++) {
+          const h = dist.get(dsList[j]);
+          if (h != null && h >= 2) {
+            result.push({ source: dsList[i], target: dsList[j], hops: h });
+          }
+        }
+      }
+      return result;
+    }
+
+    // 图谱入口：保存数据并按当前视图渲染
+    function renderGraph(graphData, datasetLinks) {
+      if (graphData) {
+        graphState.data = graphData;
+        graphState.datasetLinks = datasetLinks || {};
+      }
+      if (!graphState.data || !Array.isArray(graphState.data.nodes) || !graphState.data.nodes.length) {
+        // 无图数据：显示占位提示
+        getGraphWrap().innerHTML = `<div class="graph-placeholder">本次检索未生成图谱数据</div>`;
+        graphState.rendered = false;
+        return;
+      }
+      graphState.rendered = true;
+      if (graphState.view === "drill" && graphState.centerId) {
+        drawDrillView(graphState.centerId);
+      } else if (graphState.view === "full") {
+        // 完整合并大图视图：显示所有节点（数据集 + 概念）
+        drawFullGraphView();
+      } else {
+        drawGlobalView();
+      }
+    }
+
+    // 停掉上一个力导向模拟，清空容器
+    function resetGraphWrap() {
+      if (graphState.simulation) {
+        graphState.simulation.stop();
+        graphState.simulation = null;
+      }
+      getGraphWrap().innerHTML = "";
+    }
+
+    // 创建 tooltip 元素
+    function createTooltip() {
+      const tip = document.createElement("div");
+      tip.className = "graph-tooltip";
+      getGraphWrap().appendChild(tip);
+      return tip;
+    }
+
+    // 绑定节点拖拽（拖拽后固定位置）
+    function bindDrag(selection, simulation) {
+      selection.call(d3.drag()
+        .on("start", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        })
+        .on("drag", (event, d) => {
+          d.fx = event.x;
+          d.fy = event.y;
+        })
+        .on("end", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0);
+          // 保留 fx/fy：拖拽后固定在该位置
+        }));
+    }
+
+    // 状态A：全局视图——只显示数据集节点，按共享概念连线
+    function drawGlobalView() {
+      const graph = graphState.data;
+      const allNodes = graph.nodes || [];
+      const dsNodes = allNodes.filter(n => n.type === "dataset");
+      const conceptNodes = allNodes.filter(n => n.type === "concept");
+      if (!dsNodes.length) {
+        getGraphWrap().innerHTML = `<div class="graph-placeholder">本次检索未生成图谱数据</div>`;
+        return;
+      }
+      resetGraphWrap();
+
+      const width = getGraphWrap().clientWidth || 800;
+      const height = getGraphWrap().clientHeight || 480;
+
+      // 节点数据（拷贝，避免污染原始数据；D3 会在节点对象上挂 x/y 等属性）
+      const nodes = dsNodes.map(n => ({
+        id: n.id,
+        similarity: typeof n.similarity === "number" ? n.similarity : 0,
+        isTop5: !!n.is_top5
+      }));
+      const dsIdSet = new Set(nodes.map(n => n.id));
+      // 数据集间连线：按合并大图中的最短路径跳数（≤2跳最粗、3跳、4跳、>4跳最细，不连通不显示）
+      const pathLinks = computePathLinks(dsIdSet, graph.links || [], 20);
+      const links = pathLinks.map(l => ({ source: l.source, target: l.target, hops: l.hops }));
+      // 跳数 -> 线宽/透明度（跳数越少关联越强，线越粗越明显；>4跳统一按最细处理）
+      const hopBucket = d => (d.hops <= 2 ? 2 : (d.hops === 3 ? 3 : (d.hops === 4 ? 4 : 5)));
+      // 粗细差别减小（2.2→1.2），主要靠透明度区分跳数（0.9→0.2）
+      const linkWidth = d => ({ 2: 2.2, 3: 1.8, 4: 1.5, 5: 1.2 })[hopBucket(d)];
+      const linkOpacity = d => ({ 2: 0.9, 3: 0.6, 4: 0.38, 5: 0.2 })[hopBucket(d)];
+
+      const radiusOf = d => d.isTop5
+        ? 12 + d.similarity * 22
+        : 7 + d.similarity * 12;
+      const colorOf = d => d.isTop5 ? "#2ee6c9" : "#5a6f96";
+
+      const svg = d3.select(getGraphWrap()).append("svg")
+        .attr("viewBox", [0, 0, width, height]);
+      // 缩放/平移层
+      const zoomLayer = svg.append("g");
+      svg.call(d3.zoom()
+        .scaleExtent([0.4, 3])
+        .on("zoom", (event) => zoomLayer.attr("transform", event.transform)));
+
+      const link = zoomLayer.append("g")
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("stroke", d => `rgba(255, 255, 255, ${linkOpacity(d)})`)
+        .attr("stroke-width", linkWidth);
+
+      const node = zoomLayer.append("g")
+        .selectAll("circle")
+        .data(nodes)
+        .join("circle")
+        .attr("r", radiusOf)
+        .attr("fill", colorOf)
+        .attr("fill-opacity", d => d.isTop5 ? 0.95 : 0.7)
+        .attr("stroke", d => d.isTop5 ? "rgba(46, 230, 201, 0.6)" : "rgba(255,255,255,0.15)")
+        .attr("stroke-width", 1.5)
+        .style("cursor", "pointer");
+
+      const label = zoomLayer.append("g")
+        .selectAll("text")
+        .data(nodes)
+        .join("text")
+        .attr("class", "graph-node-label")
+        .attr("dy", d => radiusOf(d) + 12)
+        .text(d => {
+          const name = dsDisplayName(d.id);
+          return name.length > 18 ? name.slice(0, 17) + "…" : name;
+        });
+
+      const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
+          // 跳数越少关联越强，距离越近；>4跳最远
+          return ({ 2: 90, 3: 130, 4: 170, 5: 210 })[hopBucket(d)];
+        }))
+        .force("charge", d3.forceManyBody().strength(-300))
+        .force("collide", d3.forceCollide().radius(d => radiusOf(d) + 14))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("x", d3.forceX(width / 2).strength(0.06))
+        .force("y", d3.forceY(height / 2).strength(0.08));
+      graphState.simulation = simulation;
+
+      simulation.on("tick", () => {
+        link
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+        node.attr("cx", d => d.x).attr("cy", d => d.y);
+        label.attr("x", d => d.x).attr("y", d => d.y);
+      });
+
+      bindDrag(node, simulation);
+
+      // tooltip：数据集名称 + 相似度
+      const tip = createTooltip();
+      node
+        .on("mouseenter", (event, d) => {
+          tip.style.display = "block";
+          tip.textContent = `${dsDisplayName(d.id)}\n相似度 ${d.similarity.toFixed(3)}${d.isTop5 ? " · Top-5" : ""}`;
+        })
+        .on("mousemove", (event) => {
+          const rect = getGraphWrap().getBoundingClientRect();
+          tip.style.left = (event.clientX - rect.left + 12) + "px";
+          tip.style.top = (event.clientY - rect.top + 12) + "px";
+        })
+        .on("mouseleave", () => { tip.style.display = "none"; });
+
+      // 全局视图点击数据集节点 → 进入下钻视图
+      node.on("click", (event, d) => {
+        graphState.view = "drill";
+        graphState.centerId = d.id;
+        drawDrillView(d.id);
+      });
+
+      // 左上角"完整大图"按钮：切换到完整合并大图视图（显示所有数据集 + 概念节点）
+      const fullBtn = document.createElement("button");
+      fullBtn.className = "graph-back-btn";
+      fullBtn.textContent = "查看关系视图";
+      fullBtn.addEventListener("click", () => {
+        graphState.view = "full";
+        graphState.centerId = null;
+        drawFullGraphView();
+      });
+      getGraphWrap().appendChild(fullBtn);
+
+      // 图例
+      const legend = document.createElement("div");
+      legend.className = "graph-legend";
+      legend.innerHTML =
+        `<div><span class="lg-dot" style="background:#2ee6c9"></span>Top-5 推荐数据集</div>` +
+        `<div><span class="lg-dot" style="background:#5a6f96"></span>其他候选数据集</div>` +
+        `<div><span class="lg-line"></span>关联路径（越粗跳数越少、关联越强）</div>` +
+        `<div style="margin-top:2px;color:#8ea3c8">点击节点查看其概念构成</div>`;
+      getGraphWrap().appendChild(legend);
+    }
+
+    // 状态C：完整合并大图视图——显示所有节点（数据集 + 概念），显眼度三级：
+    // top-5 数据集最显眼（亮青大半径）、其余数据集稍淡、概念节点最不显眼（小 + 半透明）。
+    // 左上角两个按钮："简要"返回全局数据集视图；"推理过程"按跳数分波次点亮节点。
+    function drawFullGraphView() {
+      const graph = graphState.data;
+      const allNodes = graph.nodes || [];
+      const allLinks = graph.links || [];
+      if (!allNodes.length) {
+        getGraphWrap().innerHTML = `<div class="graph-placeholder">本次检索未生成图谱数据</div>`;
+        return;
+      }
+      resetGraphWrap();
+
+      const width = getGraphWrap().clientWidth || 800;
+      const height = getGraphWrap().clientHeight || 480;
+
+      // 推理过程数据：节点 id -> 最小跳数（从 top5 根数据集起算）；查不到的节点 hop=Infinity（最后点亮）
+      const reasoning = graphState.reasoning || null;
+      const hopsMap = (reasoning && reasoning.hops) ? reasoning.hops : null;
+
+      // 组装渲染节点（拷贝，避免污染原始数据；D3 会在节点对象上挂 x/y 等属性）
+      const nodes = allNodes.map(n => ({
+        id: n.id,
+        kind: n.type === "concept" ? "concept" : "dataset",
+        name: n.name || n.id,
+        semanticType: n.semantic_type || "",
+        confidence: n.confidence || 0,
+        similarity: typeof n.similarity === "number" ? n.similarity : 0,
+        isTop5: !!n.is_top5,
+        hop: (hopsMap && typeof hopsMap[n.id] === "number") ? hopsMap[n.id] : Infinity
+      }));
+      const nodeIdSet = new Set(nodes.map(n => n.id));
+
+      // 连线：显示所有原始 links（数据集-概念、概念-概念都画），无向去重 + 端点过滤
+      const links = [];
+      const seenEdge = new Set();
+      const linkIdOf = v => (typeof v === "object" && v !== null) ? v.id : v;
+      allLinks.forEach(l => {
+        const s = linkIdOf(l.source);
+        const t = linkIdOf(l.target);
+        if (!nodeIdSet.has(s) || !nodeIdSet.has(t) || s === t) return;
+        const key = s < t ? s + "|" + t : t + "|" + s;
+        if (seenEdge.has(key)) return;
+        seenEdge.add(key);
+        // 保留 edge_type，用于区分 数据集-概念 / 概念-概念 边的样式
+        links.push({ source: s, target: t, edgeType: l.edge_type || "" });
+      });
+
+      // ---- 显眼度三级：正常着色（动画结束后的最终效果） ----
+      // top-5 数据集：亮青 #2ee6c9，半径大，不透明度高
+      // 其余数据集：#5a6f96，半径中，不透明度中
+      // 概念节点：按 CONCEPT_COLORS[semantic_type] 着色但做小 + 半透明
+      const radiusOf = d => {
+        if (d.kind === "concept") return 4 + d.confidence * 0.8;
+        return d.isTop5 ? 11 + d.similarity * 10 : 7 + d.similarity * 6;
+      };
+      const normalFill = d => {
+        if (d.kind === "concept") return CONCEPT_COLORS[d.semanticType] || CONCEPT_COLOR_DEFAULT;
+        return d.isTop5 ? "#2ee6c9" : "#5a6f96";
+      };
+      const normalOpacity = d => {
+        if (d.kind === "concept") return 0.35;
+        return d.isTop5 ? 0.95 : 0.6;
+      };
+      const normalStroke = d => d.kind === "dataset" && d.isTop5
+        ? "rgba(46, 230, 201, 0.6)"
+        : "rgba(255,255,255,0.12)";
+      // 不显眼状态（推理动画初始）：统一暗色 + 低透明度
+      const DIM_FILL = "#3a4a6b";
+      const DIM_OPACITY = 0.15;
+
+      const svg = d3.select(getGraphWrap()).append("svg")
+        .attr("viewBox", [0, 0, width, height]);
+      // 缩放/平移层
+      const zoomLayer = svg.append("g");
+      svg.call(d3.zoom()
+        .scaleExtent([0.3, 3])
+        .on("zoom", (event) => zoomLayer.attr("transform", event.transform)));
+
+      // 连线：数据集-概念用淡色实线；概念-概念（V6 概念延展）用青色虚线突出
+      const link = zoomLayer.append("g")
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("stroke", d => d.edgeType === "concept_concept"
+          ? "rgba(140, 235, 220, 0.35)"
+          : "rgba(255, 255, 255, 0.15)")
+        .attr("stroke-width", d => d.edgeType === "concept_concept" ? 1 : 1)
+        .attr("stroke-dasharray", d => d.edgeType === "concept_concept" ? "3,3" : null);
+
+      const node = zoomLayer.append("g")
+        .selectAll("circle")
+        .data(nodes)
+        .join("circle")
+        .attr("r", radiusOf)
+        .attr("fill", normalFill)
+        .attr("fill-opacity", normalOpacity)
+        .attr("stroke", normalStroke)
+        .attr("stroke-width", d => d.kind === "dataset" && d.isTop5 ? 1.5 : 1)
+        .style("cursor", d => d.kind === "dataset" ? "pointer" : "default");
+
+      // 节点标签：只显示数据集名称，概念不显示（hover 看 tooltip，避免太乱）
+      const dsNodes = nodes.filter(n => n.kind === "dataset");
+      const label = zoomLayer.append("g")
+        .selectAll("text")
+        .data(dsNodes)
+        .join("text")
+        .attr("class", "graph-node-label")
+        .attr("dy", d => radiusOf(d) + 11)
+        .text(d => {
+          const name = dsDisplayName(d.id);
+          return name.length > 16 ? name.slice(0, 15) + "…" : name;
+        });
+
+      // 力导向布局：节点多（约 84 个），斥力/碰撞调大避免太挤
+      const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
+          // 按端点类型分档：概念-概念近、数据集-概念中、数据集-数据集远
+          const kinds = [d.source && d.source.kind, d.target && d.target.kind];
+          if (kinds[0] === "concept" && kinds[1] === "concept") return 55;
+          if (kinds.includes("concept")) return 80;
+          return 120;
+        }))
+        .force("charge", d3.forceManyBody().strength(-160))
+        .force("collide", d3.forceCollide().radius(d => radiusOf(d) + 6))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("x", d3.forceX(width / 2).strength(0.05))
+        .force("y", d3.forceY(height / 2).strength(0.07));
+      graphState.simulation = simulation;
+
+      simulation.on("tick", () => {
+        link
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+        node.attr("cx", d => d.x).attr("cy", d => d.y);
+        label.attr("x", d => d.x).attr("y", d => d.y);
+      });
+
+      bindDrag(node, simulation);
+
+      // tooltip：数据集显示名称+相似度，概念显示名称+semantic_type+confidence
+      const tip = createTooltip();
+      node
+        .on("mouseenter", (event, d) => {
+          tip.style.display = "block";
+          if (d.kind === "concept") {
+            tip.textContent = `${d.name}\n类型 ${d.semanticType || "concept"} · 置信度 ${d.confidence}`;
+          } else {
+            tip.textContent = `${dsDisplayName(d.id)}\n相似度 ${d.similarity.toFixed(3)}${d.isTop5 ? " · Top-5" : ""}`;
+          }
+        })
+        .on("mousemove", (event) => {
+          const rect = getGraphWrap().getBoundingClientRect();
+          tip.style.left = (event.clientX - rect.left + 12) + "px";
+          tip.style.top = (event.clientY - rect.top + 12) + "px";
+        })
+        .on("mouseleave", () => { tip.style.display = "none"; });
+
+      // 点击行为：数据集节点 → 跳详情页；概念节点不跳转（tooltip 已展示信息）
+      node.on("click", (event, d) => {
+        if (d.kind === "dataset") {
+          window.open(dsDetailUrl(d.id), "_blank", "noopener,noreferrer");
+        }
+      });
+
+      // 左上角两个按钮并排："简要"返回全局数据集视图；"推理过程"播放 hop 波次点亮动画
+      const rankingReplay = createRankingReplay(graphState.rankings);
+      const btnGroup = document.createElement("div");
+      btnGroup.className = "graph-btn-group";
+      const briefBtn = document.createElement("button");
+      briefBtn.className = "graph-back-btn";
+      briefBtn.textContent = "查看数据视图";
+      briefBtn.addEventListener("click", () => {
+        graphState.view = "global";
+        graphState.centerId = null;
+        drawGlobalView();
+      });
+      const animBtn = document.createElement("button");
+      animBtn.className = "graph-back-btn";
+      animBtn.textContent = "推理过程简化回放";
+      // 无推理过程数据：按钮置灰不可用
+      if (!hopsMap) {
+        animBtn.disabled = true;
+        animBtn.title = "无推理过程数据";
+      } else {
+        animBtn.addEventListener("click", () => {
+          if (rankingReplay) rankingReplay.resetToInitial();
+          playReasoningAnimation(node, normalFill, normalOpacity, DIM_FILL, DIM_OPACITY, animBtn, rankingReplay);
+        });
+      }
+      btnGroup.append(briefBtn, animBtn);
+      getGraphWrap().appendChild(btnGroup);
+      if (rankingReplay) {
+        // 默认收起，避免关系图首次打开时遮挡图谱；按钮可随时展开/收起。
+        rankingReplay.panel.hidden = true;
+        const rankingToggle = document.createElement("button");
+        rankingToggle.type = "button";
+        rankingToggle.className = "graph-ranking-toggle";
+        rankingToggle.textContent = "显示 Top-5";
+        rankingToggle.setAttribute("aria-expanded", "false");
+        rankingToggle.addEventListener("click", () => {
+          const expanded = rankingReplay.panel.hidden;
+          rankingReplay.panel.hidden = !expanded;
+          rankingToggle.textContent = expanded ? "隐藏 Top-5" : "显示 Top-5";
+          rankingToggle.setAttribute("aria-expanded", String(expanded));
+        });
+        getGraphWrap().append(rankingToggle, rankingReplay.panel);
+      }
+
+      // 图例：说明三级显眼度
+      const legend = document.createElement("div");
+      legend.className = "graph-legend";
+      legend.innerHTML =
+        `<div><span class="lg-dot" style="background:#2ee6c9"></span>Top-5 推荐数据集（点击查看详情）</div>` +
+        `<div><span class="lg-dot" style="background:#5a6f96"></span>其他候选数据集</div>` +
+        `<div><span class="lg-dot" style="background:${CONCEPT_COLOR_DEFAULT};opacity:0.5"></span>概念节点（半透明，hover 查看）</div>` +
+        `<div style="margin-top:2px;color:#8ea3c8">点击「推理过程」查看检索推理点亮顺序</div>`;
+      getGraphWrap().appendChild(legend);
+    }
+
+    // 推理过程动画：按 graphState.reasoning.hops 的跳数分波次点亮节点。
+    // 表现逻辑（体现"图推理是动态遍历、最终才收敛到推荐"）：
+    //   - 概念节点：被遍历到（所属波次）后保持点亮（累积，体现推理路径逐步展开）
+    //   - 数据集节点：只在所属波次"亮一下"，下一波起变回灰色（与普通数据集一致）
+    //   - 起始 top-5 根数据集：第 0 波亮一下，后续波次也变灰（因为起始 top5 ≠ 重排后 top5）
+    //   - 动画收尾：用显眼颜色高亮"重排后的 top-5"（isTop5 标记的数据集），其余数据集保持灰
+    function playReasoningAnimation(nodeSel, normalFill, normalOpacity, dimFill, dimOpacity, btn, rankingReplay) {
+      const reasoning = graphState.reasoning;
+      if (!reasoning || !reasoning.hops) return;
+      // 收集有限跳数分档（升序）
+      const hopSet = new Set();
+      nodeSel.each(d => { if (isFinite(d.hop)) hopSet.add(d.hop); });
+      if (!hopSet.size) return;
+      const hopLevels = Array.from(hopSet).sort((a, b) => a - b);
+      const TOTAL_MS = 3000;                 // 总时长约 3s
+      const stepMs = TOTAL_MS / hopLevels.length;  // 每波间隔（3s 均分）
+      const TRANS_MS = 350;                  // 单波过渡时长
+
+      // 普通数据集的"灰色"（非 top5 数据集的正常色，用于数据集节点波次过后变回）
+      const DS_GREY = "#5a6f96";
+      const DS_GREY_OPACITY = 0.6;
+
+      // 动画期间禁用按钮，播完恢复
+      if (btn) btn.disabled = true;
+
+      // 第 1 步：所有节点变为不显眼状态（统一暗色 + 低透明度）
+      nodeSel.transition("dim").duration(TRANS_MS)
+        .attr("fill", dimFill)
+        .attr("fill-opacity", dimOpacity);
+
+      // 第 2 步：按跳数递增分波次点亮
+      hopLevels.forEach((h, i) => {
+        const waveDelay = TRANS_MS + i * stepMs;
+        // 本波概念节点：点亮并保持（累积）
+        nodeSel.filter(d => d.hop === h && d.kind === "concept")
+          .transition("light")
+          .delay(waveDelay)
+          .duration(TRANS_MS)
+          .attr("fill", normalFill)
+          .attr("fill-opacity", normalOpacity);
+        // 本波数据集节点：点亮（亮一下）
+        nodeSel.filter(d => d.hop === h && d.kind === "dataset")
+          .transition("light")
+          .delay(waveDelay)
+          .duration(TRANS_MS)
+          .attr("fill", normalFill)
+          .attr("fill-opacity", 0.95);
+        // 之前波次的数据集节点：本波起变回灰色（亮一下即灰）
+        if (i > 0) {
+          const prevHops = hopLevels.slice(0, i);
+          nodeSel.filter(d => d.kind === "dataset" && prevHops.includes(d.hop))
+            .transition("fade")
+            .delay(waveDelay)
+            .duration(TRANS_MS)
+            .attr("fill", DS_GREY)
+            .attr("fill-opacity", DS_GREY_OPACITY);
+        }
+      });
+
+      // 第 3 步：收尾——所有数据集统一变灰，再高亮"重排后的 top-5"（isTop5）
+      const endDelay = TRANS_MS + hopLevels.length * stepMs;
+      // hop=Infinity 的概念节点：保持不显眼（不在推理路径上）
+      nodeSel.filter(d => !isFinite(d.hop) && d.kind === "concept")
+        .transition("dim2")
+        .delay(endDelay)
+        .duration(TRANS_MS)
+        .attr("fill", dimFill)
+        .attr("fill-opacity", dimOpacity);
+      // 所有数据集统一变灰（清掉波次点亮状态）
+      nodeSel.filter(d => d.kind === "dataset")
+        .transition("grey")
+        .delay(endDelay)
+        .duration(TRANS_MS)
+        .attr("fill", DS_GREY)
+        .attr("fill-opacity", DS_GREY_OPACITY);
+      // 重排后的 top-5 数据集：用显眼颜色高亮（推理收敛到最终推荐）
+      nodeSel.filter(d => d.kind === "dataset" && d.isTop5)
+        .transition("final")
+        .delay(endDelay + TRANS_MS)
+        .duration(TRANS_MS + 150)
+        .attr("fill", "#2ee6c9")
+        .attr("fill-opacity", 0.95);
+      // 图谱收敛到最终 Top-5 后，再回放右上榜单的重排结果。
+      const rankingDelay = endDelay + 2 * TRANS_MS + 150;
+      d3.timeout(() => {
+        if (rankingReplay) rankingReplay.replayFinal();
+        d3.timeout(() => { if (btn) btn.disabled = false; }, 800);
+      }, rankingDelay);
+    }
+
+    // 状态B：下钻视图——以某数据集为中心，展示其强概念与相邻数据集
+    function drawDrillView(centerId) {
+      const graph = graphState.data;
+      const allNodes = graph.nodes || [];
+      const allLinks = graph.links || [];
+      const nodeById = new Map(allNodes.map(n => [n.id, n]));
+      const centerRaw = nodeById.get(centerId);
+      if (!centerRaw) {
+        // 中心节点不存在：退回全局视图
+        graphState.view = "global";
+        graphState.centerId = null;
+        drawGlobalView();
+        return;
+      }
+      resetGraphWrap();
+
+      const width = getGraphWrap().clientWidth || 800;
+      const height = getGraphWrap().clientHeight || 480;
+
+      // ========== BFS 多跳遍历收集节点（最多 3 跳，目标 50-60 个节点） ==========
+      // 跳数定义：中心数据集为第 0 跳；其直接相连的概念为第 1 跳；
+      // 概念再相连的节点（概念或数据集）为第 2 跳；再往外一层为第 3 跳。
+      const MAX_HOPS = 3;          // 最大跳数
+      const MAX_NODES = 60;        // 节点总数硬上限
+      const TARGET_NODES = 50;     // 节点总数目标（弱概念补充阈值）
+      // 弱概念类型：format/temporal_coverage/spatial_coverage/framework 且 confidence<4 的概念
+      // 只在节点数不足时补充，以控制数量
+      const WEAK_SEMANTIC_TYPES = new Set(["format", "temporal_coverage", "spatial_coverage", "framework"]);
+      const isStrongConcept = n =>
+        n.type === "concept" && ((n.confidence || 0) >= 4 || STRONG_SEMANTIC_TYPES.has(n.semantic_type));
+      const isWeakConcept = n =>
+        n.type === "concept" && WEAK_SEMANTIC_TYPES.has(n.semantic_type) && (n.confidence || 0) < 4;
+
+      // 构建无向邻接表：边是双向的，source/target 都可能要匹配
+      // 注意 source/target 在 D3 forceLink 处理前是节点 id 字符串，处理后是对象，两种都要兼容
+      const adjacency = new Map(); // id -> Set<id>
+      const linkIdOf = v => (typeof v === "object" && v !== null) ? v.id : v;
+      allLinks.forEach(l => {
+        const s = linkIdOf(l.source);
+        const t = linkIdOf(l.target);
+        if (s == null || t == null) return;
+        if (!adjacency.has(s)) adjacency.set(s, new Set());
+        if (!adjacency.has(t)) adjacency.set(t, new Set());
+        adjacency.get(s).add(t);
+        adjacency.get(t).add(s);
+      });
+
+      // BFS 按跳数分层扩展：hopMap 记录每个节点首次到达的跳数（即最短距离）
+      const hopMap = new Map([[centerId, 0]]);
+      let frontier = [centerId];
+      for (let hop = 1; hop <= MAX_HOPS && frontier.length; hop++) {
+        const next = [];
+        frontier.forEach(id => {
+          const nbrs = adjacency.get(id);
+          if (!nbrs) return;
+          nbrs.forEach(nid => {
+            if (!nodeById.has(nid) || hopMap.has(nid)) return;
+            hopMap.set(nid, hop);
+            next.push(nid);
+          });
+        });
+        frontier = next;
+      }
+
+      // 节点过滤与截断：
+      // - 数据集节点全部保留；
+      // - 强概念（confidence>=4 或强语义类型）保留；
+      // - 弱概念先跳过，若最终节点数不足 TARGET_NODES 再按跳数近、confidence 高补充。
+      const pickedIds = new Set([centerId]);
+      const weakPool = []; // 弱概念候补池
+      // 按跳数分层处理，同跳内排序：概念按 confidence 降序，数据集按 similarity 降序
+      for (let hop = 1; hop <= MAX_HOPS; hop++) {
+        const layer = Array.from(hopMap.entries())
+          .filter(([, h]) => h === hop)
+          .map(([id]) => nodeById.get(id));
+        const concepts = layer.filter(n => n.type === "concept")
+          .sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+        const datasets = layer.filter(n => n.type === "dataset")
+          .sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+        // 同跳内优先高 confidence 概念，再高 similarity 数据集
+        concepts.forEach(c => {
+          if (isWeakConcept(c)) { weakPool.push(c); return; } // 弱概念进候补池
+          if (pickedIds.size < MAX_NODES) pickedIds.add(c.id);
+        });
+        datasets.forEach(d => {
+          if (pickedIds.size < MAX_NODES) pickedIds.add(d.id);
+        });
+      }
+      // 节点数不足目标值时，用弱概念补充（候补池已按跳数分层、层内按 confidence 排序）
+      if (pickedIds.size < TARGET_NODES) {
+        for (const c of weakPool) {
+          if (pickedIds.size >= MAX_NODES) break;
+          pickedIds.add(c.id);
+        }
+      }
+
+      // 组装渲染节点：中心 / 概念 / 其他数据集
+      const nodes = [];
+      nodes.push({
+        id: centerId,
+        kind: "center",
+        similarity: typeof centerRaw.similarity === "number" ? centerRaw.similarity : 0,
+        isTop5: !!centerRaw.is_top5
+      });
+      pickedIds.forEach(id => {
+        if (id === centerId) return;
+        const raw = nodeById.get(id);
+        if (raw.type === "concept") {
+          nodes.push({
+            id: raw.id,
+            kind: "concept",
+            name: raw.name || raw.id,
+            semanticType: raw.semantic_type || "",
+            confidence: raw.confidence || 0
+          });
+        } else {
+          nodes.push({
+            id: raw.id,
+            kind: "dataset",
+            similarity: typeof raw.similarity === "number" ? raw.similarity : 0,
+            isTop5: !!raw.is_top5
+          });
+        }
+      });
+
+      // 组装边：保留所有"两个端点都在已选节点集合内"的原始 links，
+      // 不再限于中心-概念、概念-邻居，这样能体现多跳关系
+      const nodeIdSet = new Set(nodes.map(n => n.id));
+      const links = [];
+      const seenEdge = new Set(); // 无向边去重
+      allLinks.forEach(l => {
+        const s = linkIdOf(l.source);
+        const t = linkIdOf(l.target);
+        if (!nodeIdSet.has(s) || !nodeIdSet.has(t) || s === t) return;
+        const key = s < t ? s + "|" + t : t + "|" + s;
+        if (seenEdge.has(key)) return;
+        seenEdge.add(key);
+        links.push({ source: s, target: t });
+      });
+
+      const radiusOf = d => {
+        if (d.kind === "center") return 16 + d.similarity * 20;
+        if (d.kind === "concept") return 6 + d.confidence * 1.2;
+        return 8 + d.similarity * 12;
+      };
+      const colorOf = d => {
+        if (d.kind === "center") return "#2ee6c9";
+        if (d.kind === "concept") return CONCEPT_COLORS[d.semanticType] || CONCEPT_COLOR_DEFAULT;
+        return d.isTop5 ? "#2ee6c9" : "#5a6f96";
+      };
+
+      const svg = d3.select(getGraphWrap()).append("svg")
+        .attr("viewBox", [0, 0, width, height]);
+      const zoomLayer = svg.append("g");
+      svg.call(d3.zoom()
+        .scaleExtent([0.4, 3])
+        .on("zoom", (event) => zoomLayer.attr("transform", event.transform)));
+
+      const link = zoomLayer.append("g")
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("stroke", "rgba(107, 220, 255, 0.4)")
+        .attr("stroke-width", 1.5);
+
+      const node = zoomLayer.append("g")
+        .selectAll("circle")
+        .data(nodes)
+        .join("circle")
+        .attr("r", radiusOf)
+        .attr("fill", colorOf)
+        .attr("fill-opacity", d => d.kind === "concept" ? 0.85 : 0.95)
+        .attr("stroke", d => d.kind === "center" ? "rgba(46, 230, 201, 0.7)" : "rgba(255,255,255,0.15)")
+        .attr("stroke-width", d => d.kind === "center" ? 2.5 : 1.2)
+        .style("cursor", d => d.kind === "concept" ? "default" : "pointer");
+
+      const label = zoomLayer.append("g")
+        .selectAll("text")
+        .data(nodes)
+        .join("text")
+        .attr("class", "graph-node-label")
+        .attr("dy", d => radiusOf(d) + 12)
+        .text(d => {
+          const name = d.kind === "concept" ? d.name : dsDisplayName(d.id);
+          return name.length > 16 ? name.slice(0, 15) + "…" : name;
+        });
+
+      const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
+          // 按节点类型分档：中心-概念近、概念-概念中、概念-数据集远、数据集-数据集最远
+          const s = typeof d.source === "object" ? d.source : null;
+          const t = typeof d.target === "object" ? d.target : null;
+          const kinds = [s && s.kind, t && t.kind];
+          if (kinds.includes("center")) return 80;
+          if (kinds[0] === "concept" && kinds[1] === "concept") return 100;
+          if (kinds.includes("concept")) return 130; // 概念-数据集
+          return 150; // 数据集-数据集
+        }))
+        .force("charge", d3.forceManyBody().strength(-300))
+        .force("collide", d3.forceCollide().radius(d => radiusOf(d) + 10))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("x", d3.forceX(width / 2).strength(0.06))
+        .force("y", d3.forceY(height / 2).strength(0.08));
+      graphState.simulation = simulation;
+
+      // 中心节点初始固定在画布中心
+      const centerNode = nodes[0];
+      centerNode.fx = width / 2;
+      centerNode.fy = height / 2;
+
+      simulation.on("tick", () => {
+        link
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+        node.attr("cx", d => d.x).attr("cy", d => d.y);
+        label.attr("x", d => d.x).attr("y", d => d.y);
+      });
+
+      bindDrag(node, simulation);
+
+      // tooltip：数据集显示名称+相似度，概念显示名称+semantic_type
+      const tip = createTooltip();
+      node
+        .on("mouseenter", (event, d) => {
+          tip.style.display = "block";
+          if (d.kind === "concept") {
+            tip.textContent = `${d.name}\n类型 ${d.semanticType || "concept"} · 置信度 ${d.confidence}`;
+          } else {
+            tip.textContent = `${dsDisplayName(d.id)}\n相似度 ${d.similarity.toFixed(3)}${d.kind === "center" ? " · 当前中心（点击查看详情）" : ""}`;
+          }
+        })
+        .on("mousemove", (event) => {
+          const rect = getGraphWrap().getBoundingClientRect();
+          tip.style.left = (event.clientX - rect.left + 12) + "px";
+          tip.style.top = (event.clientY - rect.top + 12) + "px";
+        })
+        .on("mouseleave", () => { tip.style.display = "none"; });
+
+      // 下钻视图点击行为：中心→详情页；其他数据集→切换中心；概念→不跳转
+      node.on("click", (event, d) => {
+        if (d.kind === "center") {
+          window.open(dsDetailUrl(d.id), "_blank", "noopener,noreferrer");
+        } else if (d.kind === "dataset") {
+          graphState.centerId = d.id;
+          drawDrillView(d.id);
+        }
+        // 概念节点：不跳转（tooltip 已展示信息）
+      });
+
+      // 左上角返回按钮
+      const backBtn = document.createElement("button");
+      backBtn.className = "graph-back-btn";
+      backBtn.textContent = "← 返回";
+      backBtn.addEventListener("click", () => {
+        graphState.view = "global";
+        graphState.centerId = null;
+        drawGlobalView();
+      });
+      getGraphWrap().appendChild(backBtn);
+
+      // 图例：数据集节点说明 + 概念节点按类型分行显示（只列出当前图里出现的类型）
+      const legend = document.createElement("div");
+      legend.className = "graph-legend is-toggleable";
+      // semantic_type 中文名映射
+      const SEMANTIC_LABELS = {
+        domain: "领域", subdomain: "子领域", subject: "主题", task: "任务",
+        method: "方法", data_type: "数据类型", measurement: "测量",
+        annotation: "标注", temporal_coverage: "时间覆盖", spatial_coverage: "空间覆盖",
+        format: "格式", framework: "框架"
+      };
+      // 收集当前下钻图里实际出现的概念类型（保持 CONCEPT_COLORS 里的顺序）
+      // 用最终渲染的节点集合（BFS 多跳结果），而非仅中心节点的直接概念
+      const presentTypes = [];
+      Object.keys(CONCEPT_COLORS).forEach(t => {
+        if (nodes.some(n => n.kind === "concept" && n.semanticType === t)) presentTypes.push(t);
+      });
+      let legendHtml =
+        `<div><span class="lg-dot" style="background:#2ee6c9"></span>中心 / Top-5 数据集</div>` +
+        `<div><span class="lg-dot" style="background:#5a6f96"></span>相关数据集（点击切换中心）</div>`;
+      if (presentTypes.length) {
+        legendHtml += `<div style="margin-top:4px;color:#8ea3c8">概念节点：</div>`;
+        presentTypes.forEach(t => {
+          legendHtml += `<div><span class="lg-dot" style="background:${CONCEPT_COLORS[t]}"></span>${SEMANTIC_LABELS[t] || t}</div>`;
+        });
+      }
+      legendHtml += `<div style="margin-top:2px;color:#8ea3c8">点击中心节点查看数据集详情</div>`;
+      legend.innerHTML = legendHtml;
+      // 子视图图例默认收起，避免较长的概念类型说明遮挡可视化。
+      legend.hidden = true;
+      const legendToggle = document.createElement("button");
+      legendToggle.type = "button";
+      legendToggle.className = "graph-legend-toggle";
+      legendToggle.textContent = "显示图例";
+      legendToggle.setAttribute("aria-expanded", "false");
+      legendToggle.addEventListener("click", () => {
+        const expanded = legend.hidden;
+        legend.hidden = !expanded;
+        legendToggle.textContent = expanded ? "隐藏图例" : "显示图例";
+        legendToggle.setAttribute("aria-expanded", String(expanded));
+      });
+      getGraphWrap().append(legendToggle, legend);
+    }
+
+    // 往进度列表追加/更新一步
+    let currentProgressItem = null;
+    function pushProgressStep(msg) {
+      // 上一步标记为完成
+      if (currentProgressItem) {
+        currentProgressItem.classList.remove("active");
+        currentProgressItem.classList.add("done");
+      }
+      const li = document.createElement("li");
+      li.className = "active";
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      const text = document.createElement("span");
+      text.textContent = msg;
+      li.append(dot, text);
+      taskSearchProgress.appendChild(li);
+      currentProgressItem = li;
+    }
+    function finishProgress() {
+      if (currentProgressItem) {
+        currentProgressItem.classList.remove("active");
+        currentProgressItem.classList.add("done");
+        currentProgressItem = null;
+      }
+    }
+
+    // ---- 进度栏折叠控制 ----
+    // 检索完成后：折叠进度列表，只显示一行可点击的"检索完成（耗时 X s）"
+    function collapseProgress(summaryText) {
+      taskSearchProgress.classList.add("collapsed");
+      taskProgressToggle.classList.add("show");
+      taskProgressToggle.classList.remove("expanded");
+      taskProgressToggleText.textContent = summaryText;
+    }
+    // 开始新检索时：重置为展开状态、隐藏开关
+    function resetProgressToggle() {
+      taskSearchProgress.classList.remove("collapsed");
+      taskProgressToggle.classList.remove("show");
+      taskProgressToggle.classList.remove("expanded");
+    }
+    // 点击开关：展开/收起进度列表
+    taskProgressToggle.addEventListener("click", () => {
+      const collapsed = taskSearchProgress.classList.toggle("collapsed");
+      taskProgressToggle.classList.toggle("expanded", !collapsed);
+    });
+
+    // ---- 精准检索开关 ----
+    const preciseSwitch = document.getElementById("preciseSwitch");
+    const taskSearchDesc = document.getElementById("taskSearchDesc");
+    let preciseOn = true; // 默认开启（三阶段图检索）
+    preciseSwitch.addEventListener("click", () => {
+      preciseOn = !preciseOn;
+      preciseSwitch.classList.toggle("on", preciseOn);
+      preciseSwitch.setAttribute("aria-checked", String(preciseOn));
+      taskSearchDesc.textContent = preciseOn
+        ? "描述你的研究任务，系统将通过三阶段图推理检索，从全部数据集中返回最相关的 10 项。"
+        : "描述你的研究任务，系统将通过向量检索（embedding 语义相似度），从全部数据集中快速返回最相关的 10 项。";
+    });
+
+    // 关闭精准检索时：只保留"检索结果"标签，其余面板显示锁定提示
+    function lockAnalysisPanels() {
+      const labels = { graph: "知识图谱", relation: "数据关联", questions: "科学问题", value: "研究意义", application: "应用场景" };
+      Object.keys(labels).forEach(key => {
+        const panel = taskTabPanels.querySelector(`[data-panel="${key}"]`);
+        if (panel) panel.innerHTML = `<div class="panel-locked">开启精准检索后实现「${labels[key]}」功能</div>`;
+      });
+    }
+
+    taskSearchForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const query = taskQuery.value.trim();
+      if (!query) {
+        taskQuery.focus();
+        return;
+      }
+
+      taskSearchButton.disabled = true;
+      taskSearchStatus.className = "task-status";
+      taskSearchStatus.textContent = "";
+      taskSearchProgress.replaceChildren();
+      taskSearchResults.replaceChildren();
+      hideTabs();
+      resetProgressToggle();
+      currentProgressItem = null;
+      // 重置图谱状态：停掉旧力导向模拟，等待新数据
+      if (graphState.simulation) {
+        graphState.simulation.stop();
+        graphState.simulation = null;
+      }
+      graphState.data = null;
+      graphState.datasetLinks = {};
+      graphState.reasoning = null;
+      graphState.rankings = null;
+      graphState.rendered = false;
+      graphState.view = "global";
+      graphState.centerId = null;
+      try {
+        // 关闭精准检索：走纯 embedding 向量检索（快速，一次性返回）
+        if (!preciseOn) {
+          pushProgressStep("正在进行向量检索（embedding 语义相似度）...");
+          const controller0 = new AbortController();
+          const timeoutId0 = setTimeout(() => controller0.abort(), 60000);
+          const res0 = await fetch("/api/retrieve_embed", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query, top_k: 10 }),
+            signal: controller0.signal,
+          });
+          clearTimeout(timeoutId0);
+          if (!res0.ok) throw new Error(`检索请求失败（${res0.status}）`);
+          const data0 = await res0.json();
+          if (!data0.ok) throw new Error(data0.error || "检索失败");
+          finishProgress();
+          showTabs();
+          renderBackendResults(data0.results || []);
+          lockAnalysisPanels();
+          collapseProgress(`检索完成（耗时总计 ${data0.elapsed}s）`);
+          taskSearchStatus.textContent = `已从数据集中找到最相关的 ${(data0.results || []).length} 项（耗时总计 ${data0.elapsed}s）。`;
+          taskSearchButton.disabled = false;
+          return;
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000); // 180秒超时
+        const res = await fetch("/api/retrieve_stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, top_k: 10 }),
+          signal: controller.signal,
+        });
+        if (!res.ok || !res.body) throw new Error(`检索请求失败（${res.status}）`);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        let finalData = null;
+        let resultsShown = false;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          // SSE 帧以 \n\n 分隔
+          const frames = buffer.split("\n\n");
+          buffer = frames.pop(); // 最后一段可能不完整，留到下次
+          for (const frame of frames) {
+            const line = frame.trim();
+            if (!line.startsWith("data:")) continue;
+            let evt;
+            try {
+              evt = JSON.parse(line.slice(5).trim());
+            } catch (e) { continue; }
+
+            if (evt.error) {
+              throw new Error(evt.error);
+            }
+            if (evt.msg) {
+              pushProgressStep(evt.msg);
+            }
+            // step 7：检索结果已生成 → 立即显示标签栏 + 检索结果（其余面板占位"分析中"）
+            if (evt.step === 7 && evt.results && !resultsShown) {
+              showTabs();
+              renderBackendResults(evt.results);
+              resultsShown = true;
+            }
+            // step 7 已带图谱数据：立即保存，用户切到"知识图谱"标签即可看，无需等科学分析
+            if (evt.step === 7 && evt.graph) {
+              graphState.data = evt.graph;
+              graphState.datasetLinks = evt.dataset_links || {};
+              graphState.reasoning = evt.reasoning || null;
+              graphState.rankings = evt.rankings || null;
+              graphState.rendered = false;
+              graphState.view = "global";
+              graphState.centerId = null;
+              // 若用户已停在图谱标签，立即渲染
+              const graphTabNow = taskTabs.querySelector('.task-tab[data-tab="graph"]');
+              if (graphTabNow && graphTabNow.classList.contains("active")) {
+                renderGraph(graphState.data, graphState.datasetLinks);
+              }
+            }
+            if (evt.done) {
+              finalData = evt;
+            }
+          }
+        }
+        clearTimeout(timeoutId);
+        finishProgress();
+
+        if (!finalData || !finalData.results) {
+          throw new Error("检索未完成，请重试");
+        }
+        // 兜底：若 step7 未触发（异常情况），这里再渲染一次结果
+        if (!resultsShown) {
+          showTabs();
+          renderBackendResults(finalData.results || []);
+        }
+        // 科学分析完成 → 填充 4 个分析面板（附带数据集链接映射）
+        renderAnalysisPanels(finalData.analysis || {}, finalData.dataset_links || {});
+        // 保存图谱数据；若用户已停在图谱标签则立即渲染，否则等切换标签时惰性渲染
+        graphState.data = finalData.graph || null;
+        graphState.datasetLinks = finalData.dataset_links || {};
+        graphState.reasoning = finalData.reasoning || null;  // 推理过程数据（hop 波次点亮动画用）
+        graphState.rankings = finalData.rankings || null;
+        graphState.rendered = false;
+        graphState.view = "global";
+        graphState.centerId = null;
+        const graphTabActive = taskTabs.querySelector('.task-tab[data-tab="graph"]').classList.contains("active");
+        if (graphTabActive) {
+          renderGraph(graphState.data, graphState.datasetLinks);
+        } else if (!graphState.data) {
+          // 无图数据时先把占位提示写上
+          getGraphWrap().innerHTML = `<div class="graph-placeholder">本次检索未生成图谱数据</div>`;
+        }
+        // 检索完成 → 折叠进度栏，只显示一行可点击的耗时摘要
+        collapseProgress(`检索完成（耗时总计 ${finalData.elapsed}s）`);
+        taskSearchStatus.textContent = `已从数据集中找到最相关的 ${(finalData.results || []).length} 项（耗时总计 ${finalData.elapsed}s）。`;
+      } catch (error) {
+        finishProgress();
+        taskSearchStatus.className = "task-status error";
+        taskSearchStatus.textContent = (error.name === "AbortError")
+          ? "检索超时，请稍后重试。"
+          : (error.message || "检索失败，请稍后重试。");
+      } finally {
+        taskSearchButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

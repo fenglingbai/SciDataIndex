@@ -1,0 +1,117 @@
+# Secrets and local configuration
+.env
+.tavily.env
+*.env
+
+# Documentation (keep local, do not publish)
+*.md
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Logs and runtime state
+*.log
+*.out
+*.pid
+
+# Large runtime datasets and generated artifacts
+data_raw/data_detail/
+data_process/results/
+tool_used/output*/
+
+# Local embedding model weights/tokenizer assets (deploy via PVC/model storage)
+local_embedding_model/models/
+local_embedding_model/*.safetensors
+local_embedding_model/*.bin
+local_embedding_model/tokenizer.json
+local_embedding_model/vocab.json
+local_embedding_model/merges.txt
+
+# Large retrieval caches
+data_retrieval/code/cache/*.npy
+data_retrieval/code/cache/*.jsonl
+data_retrieval/code/cache/concept_embeddings*.json
+data_retrieval/code/cache/concept_names*.json
+data_retrieval/code/cache/global_concept_neighbors*.json
+data_retrieval/cache/dataset_embeddings.json
+data_search/graph_infer_replica/doc_embeddings.json
+
+# Generated web data and search indexes
+web/frontend/data_json/
+web/frontend/score_json/
+web/frontend/data_json_web_backup/
+web/frontend/score_json_web_backup/
+web/frontend/search/*.f32
+web/frontend/search/dataset_embeddings.json
+
+# Generated evaluation/probe outputs
+data_process/impact_llm_probe_*.json
+data_process/impact_priority_*.json
+data_retrieval/eval/
+data_search/graph_infer_replica/
+data_search/reports/
+
+# Historical backups (keep canonical source files only)
+*.bak
+*.bak_*
+*_backup.*
+*_backup_*
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
+
+# Temporary working files
+tmp/
+
+# ---------------------------------------------------------------------------
+# Core algorithm / data-processing code (NOT published — web showcase only)
+# 仅保留前端静态展示，核心检索/处理/采集算法与后端不上传
+# ---------------------------------------------------------------------------
+
+# 数据读取核心
+data_catalog.py
+
+# 检索算法
+data_retrieval/
+
+# 数据处理 / 评分算法
+data_process/
+
+# 数据采集算法
+data_search/
+
+# Embedding 服务
+local_embedding_model/
+
+# 评测 / 离线工具
+tool_used/
+
+# Web 后端 API（调用检索核心的编排逻辑）
+web/api/
+
+# Web 后端依赖清单
+web/requirements.txt
+
+# Web 离线数据处理脚本
+web/scripts/
+
+# 前端构建/搜索索引脚本与部署配置
+web/frontend/scripts/
+web/frontend/values/
+web/frontend/Dockerfile
+web/frontend/package.json
+web/frontend/package-lock.json
+web/frontend/requirements.txt
+
+# 原始数据与画图脚本（保留统计图 figures 用于展示）
+data_raw/datasets.json
+data_raw/visual/make_figures.py
+data_raw/visual/plot_data.json
+
+# 演示视频（体积大,改用 GitHub user-attachments 内嵌播放,不进仓库）
+docs/readme_files/*.mp4

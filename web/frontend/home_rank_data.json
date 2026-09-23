@@ -1,0 +1,326 @@
+{
+  "地球科学": {
+    "icon": "🌍",
+    "slug": "earth_science",
+    "top5": [
+      {
+        "name": "Mrlc National Land Cover Database Annual Nlcd",
+        "desc": "Annual NLCD是美国地质调查局发布的年度土地覆盖与土地变化数据集，基于Landsat等多源数据，以年度时间步长记录美国本土1985—2023年的土地覆盖演变，为生态监测、资源管理、城市规划和气候变化研究提供基础信息。",
+        "file": "Mrlc_National_Land_Cover_Database_Annual_Nlcd_ratings1.json",
+        "total_score": 8.35
+      },
+      {
+        "name": "Esa Worldcover Data Access 10 M Land Cover Maps And Annual",
+        "desc": "ESA WorldCover是全球10米分辨率土地覆盖数据集，基于Sentinel-1和Sentinel-2卫星数据生产，提供11类土地覆盖信息，覆盖全球陆地区域，可服务于生物多样性、粮食安全、碳评估、气候建模和土地资源管理。",
+        "file": "Esa_Worldcover_Data_Access_10_M_Land_Cover_Maps_And_Annual_ratings1.json",
+        "total_score": 8.1
+      },
+      {
+        "name": "Copernicus Global Land Service Leaf Area Index 300 M 2014",
+        "desc": "该文档是Copernicus全球陆地服务“植被与能量”产品质量保证文件，涵盖反射率、植被指数、生物物理参数、生产力、地表温度、土壤湿度、烧毁区和物候等产品，为全球陆地监测、生态评估及气候研究提供质量验证依据。",
+        "file": "Copernicus_Global_Land_Service_Leaf_Area_Index_300_M_2014_ratings1.json",
+        "total_score": 8.0
+      },
+      {
+        "name": "National Land Cover Database Nlcd Mrlc",
+        "desc": "该数据集评估了美国本土NLCD 2019土地覆盖产品及2016、2019时相的分类精度，涵盖一级和二级土地覆盖类别及变化主题，可用于衡量地图可靠性、改进制图流程，并支撑生态、资源管理和土地变化研究。",
+        "file": "National_Land_Cover_Database_Nlcd_Mrlc_ratings1.json",
+        "total_score": 7.95
+      },
+      {
+        "name": "Usgs Nhdplus High Resolution Nhdplus Hr",
+        "desc": "NHDPlus HR是美国地质调查局建设的高分辨率国家水文数据集，整合河流、湖泊、流域边界、汇水区、地形栅格及水文属性，覆盖全美水文网络，可用于流域分析、水资源管理、洪水风险评估和环境研究。",
+        "file": "Usgs_Nhdplus_High_Resolution_Nhdplus_Hr_ratings1.json",
+        "total_score": 7.95
+      }
+    ]
+  },
+  "生命科学": {
+    "icon": "🧬",
+    "slug": "life_science",
+    "top5": [
+      {
+        "name": "AlphaFold DB",
+        "desc": "AlphaFold蛋白质结构数据库由AlphaFold根据氨基酸序列生成大规模预测结构，覆盖人类、模式生物及更广泛蛋白质资源，提供坐标、置信度和元数据，支持结构研究、功能分析与药物研发。",
+        "file": "AlphaFold_DB_ratings1.json",
+        "total_score": 7.9
+      },
+      {
+        "name": "eQTL Catalogue",
+        "desc": "eQTL Catalogue是面向人类分子数量性状位点的开放数据库，统一整理多项公开研究中的基因表达、剪接及相关QTL结果，覆盖多种组织、细胞类型和条件，可用于GWAS功能注释、候选基因筛选、精细定位与共定位分析。",
+        "file": "eQTL_Catalogue_ratings1.json",
+        "total_score": 7.8
+      },
+      {
+        "name": "AMP PD",
+        "desc": "AMP PD是由NIH、私营部门及FNIH等合作推动的帕金森病研究数据平台，汇集患者与健康对照者的临床、影像、遗传及多组学数据，用于发现和验证生物标志物、研究疾病进展，并支持药物研发与临床试验设计。",
+        "file": "AMP_PD_ratings1.json",
+        "total_score": 7.75
+      },
+      {
+        "name": "AlphaFold Database",
+        "desc": "AlphaFold数据库由Google DeepMind与EMBL-EBI共同维护，收录基于AlphaFold生成的大规模蛋白质三维结构预测及置信度、结构域和注释信息，覆盖超过100万个生物体。它支持结构—功能研究、相似性检索、病毒与病原体研究及药物发现，但不等同于实验测定结构库。",
+        "file": "AlphaFold_Database_ratings1.json",
+        "total_score": 7.7
+      },
+      {
+        "name": "UniProtKB",
+        "desc": "UniProtKB是面向全球生命科学研究的蛋白质知识库，整合氨基酸序列、功能注释、分类学、结构域、变异、相互作用及文献和外部数据库链接，支持蛋白质检索、功能分析、基因组注释和蛋白质组学研究。",
+        "file": "UniProtKB_ratings1.json",
+        "total_score": 7.65
+      }
+    ]
+  },
+  "物质科学": {
+    "icon": "🧪",
+    "slug": "physical_science",
+    "top5": [
+      {
+        "name": "Virgo Collaboration",
+        "desc": "该数据集汇集Virgo及LVK网络公开的引力波探测数据，包括标定应变、辅助通道、数据质量信息和事件目录，覆盖O4a等观测阶段，可用于引力波搜寻、噪声研究、天体参数估计及教学。",
+        "file": "Virgo_Collaboration_ratings1.json",
+        "total_score": 7.65
+      },
+      {
+        "name": "DrivAerML",
+        "desc": "DrivAerML是面向公路汽车外部空气动力学的高保真CFD数据集，覆盖参数化车辆几何、表面与体积流场、气动力及可视化结果，可用于代理建模、设计优化和流动机理研究。",
+        "file": "DrivAerML_ratings1.json",
+        "total_score": 6.7
+      },
+      {
+        "name": "DeepMIMO",
+        "desc": "DeepMIMO是面向毫米波和大规模MIMO研究的参数化射线追踪信道数据集框架，覆盖多场景、多用户、天线与传播路径信息，支持波束预测、信道估计及无线人工智能基准测试。",
+        "file": "DeepMIMO_ratings1.json",
+        "total_score": 5.95
+      },
+      {
+        "name": "DrivAerNet",
+        "desc": "DrivAerNet及DrivAerNet++是面向汽车空气动力学的高保真CFD数据集，涵盖参数化车身、三维网格、流场、表面场、气动系数、点云和部件标注，可用于阻力预测、设计优化、几何学习与CFD加速。",
+        "file": "DrivAerNet_ratings1.json",
+        "total_score": 5.85
+      },
+      {
+        "name": "Space Physics Data Facility",
+        "desc": "SPDF是NASA建设的多任务空间物理数据归档与服务设施，汇集航天器观测、轨道、太阳风、等离子体、高能粒子及编译数据，覆盖太阳—日球层—行星环境，支持跨任务检索、关联分析和协作研究。",
+        "file": "Space_Physics_Data_Facility_ratings1.json",
+        "total_score": 5.8
+      }
+    ]
+  },
+  "化学科学": {
+    "icon": "⚗️",
+    "slug": "chemistry_science",
+    "top5": [
+      {
+        "name": "Reymond Chemical Universe Databases Gdb 11 13 17 20",
+        "desc": "GDB-13是面向药物化学空间探索的超大规模分子数据库，系统枚举含不超过13个重原子的药物样分子，规模约9.75亿。其可用于训练和评估SMILES深度生成模型，支持新颖分子发现与化学空间覆盖率研究。",
+        "file": "Reymond_Chemical_Universe_Databases_Gdb_11_13_17_20_ratings1.json",
+        "total_score": 8.4
+      },
+      {
+        "name": "Zinc20",
+        "desc": "ZINC20是由加州大学旧金山分校相关团队维护的超大规模、免费化学数据库，重点收录可采购小分子及其化学、结构和生物活性信息，可用于虚拟筛选、分子对接、药物发现与化合物库检索。",
+        "file": "Zinc20_ratings1.json",
+        "total_score": 8.2
+      },
+      {
+        "name": "Pubchem Bioassay",
+        "desc": "PubChem BioAssay是由美国国家生物技术信息中心等维护的开放式生物活性数据库，收录小分子、RNAi及高通量筛选等研究数据，支持药物发现、化学生物学、毒性研究和生物医学信息检索。",
+        "file": "Pubchem_Bioassay_ratings1.json",
+        "total_score": 7.7
+      },
+      {
+        "name": "Pubchem Nih Nlm Ncbi",
+        "desc": "PubChem是由美国国立卫生研究院、国家医学图书馆和NCBI建设的公共化学信息资源，整合化学物质、唯一化学结构及生物活性实验数据，支持化学信息学、药物发现、化学生物学和分子研究。",
+        "file": "Pubchem_Nih_Nlm_Ncbi_ratings1.json",
+        "total_score": 7.35
+      },
+      {
+        "name": "PubChem Upload",
+        "desc": "PubChem Upload是面向PubChem Substance、Compound和BioAssay数据库的数据提交与接入系统，收集化学物质描述、标准化结构、生物活性、注释及关联信息，服务于化学检索、药物研发和生物活性研究。",
+        "file": "PubChem_Upload_ratings1.json",
+        "total_score": 7.25
+      }
+    ]
+  },
+  "神经科学": {
+    "icon": "🧠",
+    "slug": "neuro_science",
+    "top5": [
+      {
+        "name": "Brain Data Science Platform (BDSP)",
+        "desc": "BDSP是由斯坦福医学等机构建设、托管于AWS的脑数据科学平台，汇集EEG、睡眠、MRI、CT、PET、EHR等多模态数据，服务于癫痫、睡眠、重症脑病和神经影像研究，支持临床智能分析与可复现研究。",
+        "file": "Brain_Data_Science_Platform_(BDSP)_ratings1.json",
+        "total_score": 7.85
+      },
+      {
+        "name": "PsychENCODE Knowledge Portal",
+        "desc": "PsychENCODE是面向神经精神疾病研究的脑科学基因组资源，整合人脑组织的转录组、表观基因组、单细胞、空间及多组学数据，解析遗传变异与基因调控、细胞类型和疾病机制的联系，为精神疾病风险基因发现和功能研究提供支持。",
+        "file": "PsychENCODE_Knowledge_Portal_ratings1.json",
+        "total_score": 7.25
+      },
+      {
+        "name": "HCP 1,200 Young Adults",
+        "desc": "HCP青年成人1200名受试者数据集用于绘制健康年轻成人的人脑连接组，涵盖结构、功能、扩散、行为及部分MEG数据，支持脑连接、行为差异、遗传力和多模态方法研究。",
+        "file": "HCP_1,200_Young_Adults_ratings1.json",
+        "total_score": 7.2
+      },
+      {
+        "name": "Human Connectome Project 1200 (HCP-1200 / S1200)",
+        "desc": "HCP-1200是华盛顿大学—明尼苏达大学联盟发布的健康年轻成人多模态脑影像与行为数据集，涵盖结构、功能、扩散MRI及部分7T和MEG数据，适用于连接组、脑网络、行为预测和个体差异研究。",
+        "file": "Human_Connectome_Project_1200_(HCP-1200___S1200)_ratings1.json",
+        "total_score": 7.2
+      },
+      {
+        "name": "NACC",
+        "desc": "NACC是由美国NIA设立、集中维护的阿尔茨海默病研究多模态数据资源，涵盖临床、认知、神经病理、影像、生物标志物和遗传信息，支持纵向变化、诊断分型及多模态关联研究。",
+        "file": "NACC_ratings1.json",
+        "total_score": 7.2
+      }
+    ]
+  },
+  "材料科学": {
+    "icon": "🔩",
+    "slug": "material_science",
+    "top5": [
+      {
+        "name": "JARVIS-DFT Wannier 3D materials, JVASP-5 to JVASP-28500",
+        "desc": "该数据集面向三维材料的第一性原理与Wannier紧束缚研究，汇集JARVIS体系相关材料标识JVASP-5至JVASP-28500的数据资源，可用于能带、态密度、拓扑性质及输运等计算，支持高通量材料筛选与电子结构分析。",
+        "file": "JARVIS-DFT_Wannier_3D_materials,_JVASP-5_to_JVASP-28500_ratings1.json",
+        "total_score": 7.55
+      },
+      {
+        "name": "JARVIS-DFT-DFPT, JVASP-9765 to JVASP-18883",
+        "desc": "该数据集属于NIST-JARVIS体系的DFT/DFPT材料计算数据，覆盖JVASP-9765至JVASP-18883，涉及介电、压电、红外、声子及Born有效电荷等性质，可用于材料筛选、性质预测和结构—性能关系研究。",
+        "file": "JARVIS-DFT-DFPT,_JVASP-9765_to_JVASP-18883_ratings1.json",
+        "total_score": 7.35
+      },
+      {
+        "name": "OMat24",
+        "desc": "OMat24是Meta FAIR发布的大规模开放无机材料DFT数据集与配套模型，覆盖平衡及非平衡晶体结构、能量、力和应力，可用于材料发现、性质预测、机器学习势和高通量模拟。",
+        "file": "OMat24_ratings1.json",
+        "total_score": 7.25
+      },
+      {
+        "name": "NOMAD CoE Database",
+        "desc": "NOMAD是面向材料科学的开放数据基础设施，汇集计算、实验与合成记录，提供原始数据保存、规范化归档、检索、可视化和分析服务，支持材料发现、方法比较、结果复现及数据驱动与人工智能研究。",
+        "file": "NOMAD_CoE_Database_ratings1.json",
+        "total_score": 7.25
+      },
+      {
+        "name": "SDNET2018",
+        "desc": "SDNET2018是面向混凝土裂缝自动检测的带标注图像数据集，涵盖桥面、墙体和路面，提供约5.6万张裂缝/无裂缝子图像，可用于算法训练、验证、基准测试及结构健康监测研究。",
+        "file": "SDNET2018_ratings1.json",
+        "total_score": 7.0
+      }
+    ]
+  },
+  "天文科学": {
+    "icon": "🔭",
+    "slug": "astronomy_science",
+    "top5": [
+      {
+        "name": "Gaia ESA Archive",
+        "desc": "Gaia ESA Archive是欧洲空间局Gaia任务的数据访问与分析平台，汇集DR1至DR3的天体测量、光度、光谱、径向速度及派生产品，覆盖全天空海量天体，服务于银河系结构、动力学、恒星演化和天体分类研究。",
+        "file": "Gaia_ESA_Archive_ratings1.json",
+        "total_score": 7.65
+      },
+      {
+        "name": "Sdss",
+        "desc": "该数据集是SDSS-III项目执行计划文档，系统说明项目组织架构、科学目标、观测任务、数据处理与发布、进度预算及质量指标，为大型天文巡天的实施管理、数据生产和科研协作提供依据。",
+        "file": "Sdss_ratings1.json",
+        "total_score": 7.2
+      },
+      {
+        "name": "Apass Dr10",
+        "desc": "该数据集收录NOIRLab关于“历史上最亮恒星”亮度测定的新闻长文档，涵盖天文学发现、观测研究及机构信息，可用于科学新闻摘要、天文知识检索与文本问答。",
+        "file": "Apass_Dr10_ratings1.json",
+        "total_score": 7.05
+      },
+      {
+        "name": "Gaia Astronomical Database",
+        "desc": "Gaia是欧洲空间局开展的全天空间天文测绘数据集，汇集十亿级恒星的位置、亮度、距离、自行、颜色及部分径向速度、光谱和时间序列信息，服务于银河系三维结构、动力学、恒星演化、双星、太阳系天体及河外源研究。",
+        "file": "Gaia_Astronomical_Database_ratings1.json",
+        "total_score": 7.0
+      },
+      {
+        "name": "LRO",
+        "desc": "LRO是NASA自2009年开展的月球勘测任务数据档案，涵盖地形、影像、热辐射、成分、辐射、挥发物和轨道确定等观测，服务于月球资源探测、安全着陆、环境评估及月球演化研究。",
+        "file": "LRO_ratings1.json",
+        "total_score": 7.0
+      }
+    ]
+  },
+  "计算机科学": {
+    "icon": "💻",
+    "slug": "computer_science",
+    "top5": [
+      {
+        "name": "FineWeb-Edu",
+        "desc": "FineWeb-Edu是Hugging Face FineData团队从FineWeb中筛选的高教育价值网页文本数据集，覆盖来自Common Crawl的大规模英文网络内容，主要用于大语言模型预训练，并有助于提升知识与推理能力。",
+        "file": "FineWeb-Edu_ratings1.json",
+        "total_score": 7.85
+      },
+      {
+        "name": "allenai/objaverse",
+        "desc": "Objaverse 1.0是一个约80万规模的高质量、带丰富标注的3D对象数据集，涵盖动物、人物、车辆及室内外空间，支持3D生成、视觉分割、具身导航和视觉模型鲁棒性研究。",
+        "file": "allenai_objaverse_ratings1.json",
+        "total_score": 7.55
+      },
+      {
+        "name": "EPIC-KITCHENS",
+        "desc": "EPIC-KITCHENS是面向厨房日常活动的第一人称视频数据集，涵盖动作、物体、音频及事件模态，支持识别、检测、预期、检索和跨域学习，为理解人与物体交互及日常行为提供重要基准。",
+        "file": "EPIC-KITCHENS_ratings1.json",
+        "total_score": 7.2
+      },
+      {
+        "name": "OCR-Synthetic-Multilingual-v1",
+        "desc": "NVIDIA推出的多语言合成OCR训练数据集，基于改进版SynthDoG生成，面向文本检测与识别研究，可用于训练多语言OCR模型并降低真实数据获取成本。",
+        "file": "OCR-Synthetic-Multilingual-v1_ratings1.json",
+        "total_score": 7.05
+      },
+      {
+        "name": "MatSynth",
+        "desc": "MatSynth是面向计算机图形学与PBR材料外观建模的公开数据集，包含4,069个可平铺4K材料及大量增强和渲染结果，支持材料获取、生成、检索、分割与合成视觉数据研究。",
+        "file": "MatSynth_ratings1.json",
+        "total_score": 7.05
+      }
+    ]
+  },
+  "通识科学": {
+    "icon": "📚",
+    "slug": "general_science",
+    "top5": [
+      {
+        "name": "alphafold-protein-structure-database",
+        "desc": "该数据集由DeepMind研发，用于提供大规模蛋白质三维结构预测结果，覆盖广泛蛋白序列与物种，支持结构分析、功能注释、分子机制研究和药物发现，显著降低实验解析成本。",
+        "file": "alphafold-protein-structure-database_ratings1.json",
+        "total_score": 9.1
+      },
+      {
+        "name": "gtex-portal-adult-gtex",
+        "desc": "该数据集由GTEx项目构建，整合449名供体、44种人体组织的基因型与RNA表达数据，用于解析遗传变异对基因表达的局部和远端调控，支持组织特异性研究、疾病机制阐释及生物标志物发现。",
+        "file": "gtex-portal-adult-gtex_ratings1.json",
+        "total_score": 8.2
+      },
+      {
+        "name": "cz-cellxgene-discover-census",
+        "desc": "CZ CELLxGENE Discover是由Chan Zuckerberg Initiative研发的单细胞数据平台，汇集超过9300万经过整理和标准化的细胞转录组数据，支持跨组织、跨研究的数据探索、比较分析与单细胞层面的元分析，服务于生命科学和医学研究。",
+        "file": "cz-cellxgene-discover-census_ratings1.json",
+        "total_score": 8.15
+      },
+      {
+        "name": "international-mouse-phenotyping-consortium-impc-accessing",
+        "desc": "该数据集由国际小鼠表型联盟系统构建，汇集基因敲除小鼠的多维表型与基因型信息，用于解析蛋白编码基因功能、发现疾病相关机制、建立人类疾病模型，并为遗传诊断和精准医学研究提供开放数据支持。",
+        "file": "international-mouse-phenotyping-consortium-impc-accessing_ratings1.json",
+        "total_score": 8.1
+      },
+      {
+        "name": "drivaernet",
+        "desc": "DrivAerNet++是面向汽车空气动力学设计的大规模多模态数据集，包含8000种车辆设计及高保真CFD仿真数据，覆盖多种车身、底盘和车轮配置，可用于阻力预测、设计优化、生成建模、代理模型训练与几何分类。",
+        "file": "drivaernet_ratings1.json",
+        "total_score": 8.05
+      }
+    ]
+  }
+}
