@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+    const pathParts = location.pathname.split("/");
+    const base = pathParts[1] === "scidataindex"
+      ? "/scidataindex/"
+      : "/";
+    document.write(`<base href="${base}">`);
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SciDataIndex · API 调用</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap");
+
+    :root {
+      --bg-0: #02061a;
+      --bg-1: #061338;
+      --bg-2: #0a1f4f;
+      --accent: #2ee6c9;
+      --glow: #6bdcff;
+      --text-0: #e9f2ff;
+      --text-1: #b6c7e6;
+      --card: rgba(12, 27, 69, 0.7);
+      --stroke: rgba(255, 255, 255, 0.18);
+      --code-bg: #0a1230;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Sora", "HarmonyOS Sans SC", "PingFang SC", sans-serif;
+      color: var(--text-0);
+      background: radial-gradient(900px 450px at 20% 20%, #183ea4 0%, transparent 60%),
+        radial-gradient(900px 520px at 80% 20%, #0c1a45 0%, transparent 70%),
+        linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 50%, var(--bg-0) 100%);
+      min-height: 100vh;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      background: rgba(3, 9, 32, 0.7);
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-left { display: flex; align-items: center; gap: 24px; }
+    .nav-links { display: flex; gap: 18px; }
+    .nav-links a.active { color: var(--glow); font-weight: 600; }
+
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      font-weight: 700; font-size: 20px; color: var(--glow);
+    }
+
+    .brand-logo {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #6bf6ff, #1aa7ff 60%, #0a3476 100%);
+      box-shadow: 0 0 18px rgba(83, 211, 255, 0.4);
+    }
+
+    .nav a { color: #b6c7e6; text-decoration: none; font-size: 14px; }
+
+    .nav-action {
+      padding: 8px 18px; border-radius: 999px;
+      border: 1px solid rgba(107, 220, 255, 0.4);
+      color: var(--glow) !important; font-size: 13px; transition: background 0.2s;
+    }
+    .nav-action:hover { background: rgba(107, 220, 255, 0.15); }
+
+    .container {
+      max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px;
+      display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr);
+    }
+
+    .hero {
+      text-align: left;
+      margin-bottom: 14px;
+    }
+    .hero h1 { margin: 0 0 10px; font-size: clamp(26px, 4vw, 38px); }
+    .hero p { margin: 6px 0; color: var(--text-1); line-height: 1.7; }
+
+    .card {
+      background: var(--card); border: 1px solid var(--stroke);
+      border-radius: 14px; padding: 22px; min-width: 0;
+    }
+    .card h2 {
+      margin: 0 0 14px; font-size: 20px; color: var(--accent);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card h3 { margin: 18px 0 8px; font-size: 15px; color: var(--glow); }
+    .card p { margin: 6px 0; color: var(--text-1); line-height: 1.7; font-size: 14px; }
+
+    code.inline {
+      background: rgba(107, 220, 255, 0.12); color: var(--glow);
+      padding: 2px 7px; border-radius: 6px;
+      font-family: "JetBrains Mono", "Consolas", monospace; font-size: 13px;
+    }
+
+    /* 表格 */
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13.5px; }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--stroke); }
+    th { color: var(--glow); font-weight: 600; }
+    td { color: var(--text-1); }
+    td code { background: rgba(107,220,255,0.12); color: var(--glow); padding: 1px 6px; border-radius: 5px; font-size: 12.5px; }
+
+    /* 代码块 */
+    pre {
+      background: var(--code-bg); border: 1px solid var(--stroke);
+      border-radius: 10px; padding: 16px; overflow-x: auto;
+      font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
+      font-size: 13px; line-height: 1.65; color: #d7e6ff; margin: 10px 0;
+      position: relative; max-width: 100%; box-sizing: border-box;
+    }
+    pre > span {
+      display: block; max-width: 100%;
+      white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere;
+    }
+    pre .cmt { color: #6b7fa8; }
+
+    /* 复制按钮 */
+    .copy-btn {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(107, 220, 255, 0.12); color: var(--glow);
+      border: 1px solid rgba(107, 220, 255, 0.3); border-radius: 7px;
+      padding: 4px 12px; font-size: 12px; cursor: pointer; transition: background 0.2s;
+    }
+    .copy-btn:hover { background: rgba(107, 220, 255, 0.25); }
+
+    /* Tab 切换 */
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .tab-btn {
+      background: rgba(12, 27, 69, 0.5); color: var(--text-1);
+      border: 1px solid var(--stroke); border-radius: 9px;
+      padding: 8px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+      font-family: inherit;
+    }
+    .tab-btn:hover { color: var(--glow); border-color: rgba(107, 220, 255, 0.4); }
+    .tab-btn.active {
+      background: rgba(46, 230, 201, 0.15); color: var(--accent);
+      border-color: var(--accent); font-weight: 600;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .note {
+      background: rgba(255, 200, 100, 0.08); border-left: 3px solid #ffc864;
+      border-radius: 8px; padding: 12px 16px; margin: 10px 0;
+      color: var(--text-1); font-size: 13.5px; line-height: 1.6;
+    }
+    .tip {
+      background: rgba(46, 230, 201, 0.07); border-left: 3px solid var(--accent);
+      border-radius: 8px; padding: 12px 16px; margin: 10px 0;
+      color: var(--text-1); font-size: 13.5px; line-height: 1.6;
+    }
+
+    .badge {
+      display: inline-block; padding: 2px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 600; margin-right: 6px;
+    }
+    .badge-get { background: rgba(46,230,201,0.15); color: var(--accent); }
+    .badge-post { background: rgba(123,97,255,0.2); color: #b39dff; }
+
+    /* 申请/查询表单 */
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 4px; }
+    .form-row input {
+      flex: 1; min-width: 200px;
+      background: rgba(6, 19, 56, 0.6); border: 1px solid var(--stroke);
+      border-radius: 9px; padding: 10px 14px; color: var(--text-0);
+      font-size: 13.5px; font-family: inherit; outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-row input:focus { border-color: var(--glow); }
+    .form-row input::placeholder { color: #5a6b8c; }
+    .action-btn {
+      background: rgba(46, 230, 201, 0.15); color: var(--accent);
+      border: 1px solid var(--accent); border-radius: 9px;
+      padding: 10px 22px; font-size: 13.5px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s; font-family: inherit;
+      white-space: nowrap;
+    }
+    .action-btn:hover { background: rgba(46, 230, 201, 0.28); }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .action-btn.small { padding: 6px 14px; font-size: 12.5px; }
+    /* Agent 支持下载区 */
+    .dl-meta {
+      display: flex; gap: 24px; flex-wrap: wrap;
+      margin: 14px 0 12px; font-size: 13px; color: var(--text-1);
+    }
+    .dl-btn {
+      display: inline-block; text-decoration: none; margin-top: 2px;
+    }
+    .dl-list { margin: 8px 0 8px 20px; color: var(--text-1); font-size: 13.5px; line-height: 1.9; }
+    .form-msg { font-size: 13px; margin-top: 8px; min-height: 18px; color: var(--text-1); }
+    .form-msg.ok { color: var(--accent); }
+    .form-msg.err { color: #ff8a8a; }
+    .key-result {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      margin-top: 12px; padding: 14px 16px;
+      background: rgba(6, 19, 56, 0.6); border: 1px dashed rgba(46, 230, 201, 0.4);
+      border-radius: 10px;
+    }
+    .key-masked {
+      font-family: "JetBrains Mono", "Consolas", monospace; font-size: 15px;
+      letter-spacing: 1px; color: var(--glow);
+    }
+
+    /* ===== 左侧目录（与 docs.html 同款） ===== */
+    html { scroll-behavior: smooth; }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .doc-toc {
+      position: sticky;
+      top: 24px;
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 16px 14px;
+      font-size: 13.5px;
+    }
+
+    .doc-toc-title {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--glow);
+      letter-spacing: 0.05em;
+    }
+
+    .doc-toc ul { list-style: none; margin: 0; padding: 0; }
+    .doc-toc li { margin: 2px 0; }
+
+    .doc-toc a {
+      display: block;
+      padding: 6px 10px;
+      border-radius: 8px;
+      color: var(--text-1);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+      line-height: 1.45;
+    }
+
+    .doc-toc a:hover { color: var(--glow); background: rgba(107, 220, 255, 0.08); }
+
+    .doc-toc a.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: rgba(46, 230, 201, 0.08);
+      font-weight: 600;
+    }
+
+    .doc-content { min-width: 0; display: grid; gap: 18px; }
+    .doc-content section[id] { scroll-margin-top: 24px; }
+
+    @media (max-width: 900px) {
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-toc { position: static; }
+    }
+
+    @media (max-width: 900px) {
+      .nav { padding: 16px 20px; }
+      .nav-links { gap: 12px; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-left">
+      <div class="brand">
+        <span style="position:relative;display:inline-block;">SciDataIndex<img src="images/opencompass.svg" alt="OpenCompass" style="position:absolute;top:-8px;right:0;height:11px;width:auto;opacity:0.85;"></span>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="data_ranks/earth_science.html">数据榜单</a>
+        <a href="dataset_list.html">数据列表</a>
+        <a href="task_search.html">任务检索</a>
+        <a href="compare.html">数据量衡</a>
+        <a href="api.html" class="active">API调用</a>
+        <a href="docs.html">技术文档</a>
+      </nav>
+    </div>
+    <a class="nav-action" href="index_en.html">EN</a>
+  </header>
+
+  <main class="container">
+    <div class="doc-layout">
+      <aside class="doc-toc">
+        <p class="doc-toc-title">目录</p>
+        <ul>
+          <li><a href="#api-keyget">API 获取</a></li>
+          <li><a href="#api-access">接入信息</a></li>
+          <li><a href="#api-examples">调用示例</a></li>
+          <li><a href="#api-agent">Agent 支持</a></li>
+          <li><a href="#api-params">请求参数</a></li>
+          <li><a href="#api-response">返回结构</a></li>
+          <li><a href="#api-errors">错误响应</a></li>
+          <li><a href="#api-tips">使用建议</a></li>
+        </ul>
+      </aside>
+      <div class="doc-content">
+    <section class="hero">
+      <h1>API 调用</h1>
+      <p>SciDataIndex 对外开放科学数据集智能检索 API。持有 API Key（令牌）即可通过互联网调用，返回相关数据集列表；精准模式下额外返回候选关系图结构。</p>
+      <p>核心能力：自然语言检索 · 快速向量召回 · 精准图谱推理与 LLM 重排</p>
+    </section>
+
+    <!-- API 获取（申请 / 查询 两个子菜单） -->
+    <section class="card" id="api-keyget">
+      <h2>🔐 API 获取</h2>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="apply">申请</button>
+        <button class="tab-btn" data-tab="query">查询</button>
+      </div>
+
+      <!-- 申请 -->
+      <div class="tab-panel active" id="tab-apply">
+        <p>填写邮箱与用途提交申请，审核通过后查询码将发送至您的邮箱。一个邮箱固定绑定一个 API Key。</p>
+        <div class="form-row">
+          <input type="email" id="apply-email" placeholder="您的邮箱地址" maxlength="120" />
+          <input type="text" id="apply-purpose" placeholder="用途说明（如：科研数据集调研）" maxlength="500" />
+          <button class="action-btn" id="apply-btn">提交申请</button>
+        </div>
+        <div class="form-msg" id="apply-msg"></div>
+      </div>
+
+      <!-- 查询 -->
+      <div class="tab-panel" id="tab-query">
+        <p>输入申请时填写的邮箱和邮件中收到的查询码，即可获取您的 API Key。</p>
+        <div class="form-row">
+          <input type="email" id="query-email" placeholder="您的邮箱地址" maxlength="120" />
+          <input type="text" id="query-code" placeholder="6 位查询码（如 8X4K2P）" maxlength="16" />
+          <button class="action-btn" id="query-btn">查询</button>
+        </div>
+        <div class="form-msg" id="query-msg"></div>
+        <div class="key-result" id="key-result" style="display:none;">
+          <span class="key-masked" id="key-masked"></span>
+          <button class="action-btn small" id="key-copy-btn">复制完整 Key</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 接入信息（Base URL + 鉴权） -->
+    <section class="card" id="api-access">
+      <h2>🔌 接入信息</h2>
+      <h3>Base URL</h3>
+      <pre id="baseurl">http://47.103.128.241:8001</pre>
+      <p>当前 demo 阶段使用 IP 直连。所有接口路径均基于此 Base URL。</p>
+      <p style="margin-top:10px;">
+        <span class="badge badge-post">POST</span>
+        <code class="inline">/api/v1/search</code>
+      </p>
+      <h3>鉴权方式</h3>
+      <p>请求头携带 Bearer API Key：</p>
+      <pre id="auth">Authorization: Bearer &lt;你的API Key&gt;</pre>
+      <p>无 API Key 或 API Key 无效将返回 <code class="inline">401</code>。</p>
+      <div class="note">
+        <strong>限流规则</strong>：每个 API Key 每分钟 <strong>30</strong> 次；全局每日 100000 次。超限返回 <code class="inline">429</code>。
+      </div>
+    </section>
+
+    <!-- 调用示例（4 个 tab） -->
+    <section class="card" id="api-examples">
+      <h2>💻 调用示例</h2>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="curl">curl (Linux/macOS)</button>
+        <button class="tab-btn" data-tab="python">Python (跨平台)</button>
+        <button class="tab-btn" data-tab="curlexe">curl.exe (Windows)</button>
+        <button class="tab-btn" data-tab="powershell">PowerShell (Windows)</button>
+      </div>
+
+      <!-- curl -->
+      <div class="tab-panel active" id="tab-curl">
+        <h3>快速模式（默认）</h3>
+        <pre><button class="copy-btn" data-copy="curl1">复制</button><span id="curl1">curl -X POST http://47.103.128.241:8001/api/v1/search \
+  -H "Authorization: Bearer &lt;你的API Key&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"我想寻找生命科学数据安全高风险研究相关的数据集","top_k":10}'</span></pre>
+        <h3>精准模式（加 <code class="inline">"precise": true</code>）</h3>
+        <pre><button class="copy-btn" data-copy="curl2">复制</button><span id="curl2">curl -X POST http://47.103.128.241:8001/api/v1/search \
+  -H "Authorization: Bearer &lt;你的API Key&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"我想寻找生命科学数据安全高风险研究相关的数据集","top_k":10,"precise":true}'</span></pre>
+      </div>
+
+      <!-- python -->
+      <div class="tab-panel" id="tab-python">
+        <pre><button class="copy-btn" data-copy="py1">复制</button><span id="py1">import requests
+
+resp = requests.post(
+    "http://47.103.128.241:8001/api/v1/search",
+    headers={"Authorization": "Bearer &lt;你的API Key&gt;"},
+    json={
+        "query": "我想寻找生命科学数据安全高风险研究相关的数据集",
+        "top_k": 10,
+        "precise": True,  <span class="cmt"># True=精准模式(约30-60s)；False/省略=快速模式(&lt;1s)</span>
+    },
+    timeout=120,  <span class="cmt"># 精准模式需设置较长超时；快速模式可设短些</span>
+)
+data = resp.json()
+
+if data.get("ok"):
+    for item in data["results"]:
+        print(item["name"], item["score"], item["category"])
+        print("  来源:", item["source_link"] or "无", " 下载:", item["download_link"] or "无")
+    if data["precise"]:
+        graph = data["graph"]  <span class="cmt"># {"nodes": [...], "links": [...]}</span>
+        print(f"图节点数: {len(graph['nodes'])}, 边数: {len(graph['links'])}")
+else:
+    print("调用失败:", data.get("error"))</span></pre>
+      </div>
+      <!-- curl.exe -->
+      <div class="tab-panel" id="tab-curlexe">
+        <div class="note">Windows PowerShell 中 <code class="inline">curl</code> 是 <code class="inline">Invoke-WebRequest</code> 的别名，语法不同。请使用 <code class="inline">curl.exe</code>（全名），并把 JSON 写入文件后引用，避免转义与中文乱码问题。</div>
+        <h3>第一步：创建请求体文件 body.json（UTF-8 编码）</h3>
+        <pre><button class="copy-btn" data-copy="ce1">复制</button><span id="ce1">'{"query":"我想寻找生命科学数据安全高风险研究相关的数据集","top_k":10,"precise":true}' | Out-File -Encoding utf8 body.json</span></pre>
+        <h3>第二步：用 @body.json 引用发送</h3>
+        <pre><button class="copy-btn" data-copy="ce2">复制</button><span id="ce2">curl.exe -X POST http://47.103.128.241:8001/api/v1/search -H "Authorization: Bearer &lt;你的API Key&gt;" -H "Content-Type: application/json" -d "@body.json"</span></pre>
+      </div>
+
+      <!-- powershell -->
+      <div class="tab-panel" id="tab-powershell">
+        <div class="tip">无需手动处理 JSON 转义，自动处理中文编码，返回自动解析为对象。</div>
+        <pre><button class="copy-btn" data-copy="ps1">复制</button><span id="ps1">$headers = @{
+    "Authorization" = "Bearer &lt;你的API Key&gt;"
+}
+$body = @{
+    query   = "我想寻找生命科学数据安全高风险研究相关的数据集"
+    top_k   = 10
+    precise = $true        <span class="cmt"># $true=精准模式；$false/省略=快速模式</span>
+} | ConvertTo-Json
+
+$response = Invoke-RestMethod -Uri "http://47.103.128.241:8001/api/v1/search" `
+    -Method Post -Headers $headers -Body $body `
+    -ContentType "application/json; charset=utf-8" -TimeoutSec 120
+
+<span class="cmt"># 查看结果</span>
+$response.results | Format-Table name, score, category
+$response.graph.nodes    <span class="cmt"># 图节点（仅精准模式有数据）</span>
+$response.graph.links    <span class="cmt"># 图边（仅精准模式有数据）</span></span></pre>
+        <div class="tip">若 PowerShell 中文显示乱码，先运行：<code class="inline">[Console]::OutputEncoding = [System.Text.Encoding]::UTF8</code></div>
+      </div>
+
+    </section>
+
+    <!-- Agent 支持（API 文档 / AI Skill 两个子菜单） -->
+    <section class="card" id="api-agent">
+      <h2>🤖 Agent 支持</h2>
+      <p>我们提供两类可下载的配套文档：面向开发者的完整 API 使用文档，以及面向 AI 编码助手的技能文件（SKILL.md）。两者均由我们持续维护更新。</p>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="docmd">📘 API 使用文档</button>
+        <button class="tab-btn" data-tab="skill">🧠 SciDataIndex Skill</button>
+      </div>
+
+      <!-- API 使用文档 -->
+      <div class="tab-panel active" id="tab-docmd">
+        <p>这是一份<strong>面向开发者</strong>的 Markdown 文档，与本页面内容一致，适合离线阅读、存档或随项目分发。内容涵盖：API Key 获取流程、Base URL 与鉴权方式、请求参数（含快速/精准两种模式对比）、返回结构字段说明、四种调用示例（curl / Python / curl.exe / PowerShell）、错误码表与使用建议。</p>
+        <p>下载后可直接用任意 Markdown 编辑器（Typora、VS Code 等）打开阅读，或放入项目文档目录供团队查阅。</p>
+        <div class="dl-meta">
+          <span>文件名：<code class="inline">SciDataIndex_API_Docs.md</code></span>
+          <span>更新日期：2026-09-24</span>
+        </div>
+        <a class="action-btn dl-btn" href="downloads/SciDataIndex_API_Docs.md" download>⬇ 下载 Markdown</a>
+      </div>
+
+      <!-- AI Skill -->
+      <div class="tab-panel" id="tab-skill">
+        <p>这是一份<strong>面向 AI 编码助手</strong>的技能文件（SKILL.md 格式）。把它放进你的项目技能目录后，AI 助手会在你提出"找数据集""比较数据集质量"等需求时，自动调用 SciDataIndex 检索 API 并整理结果——无需你手写调用代码。</p>
+        <p><strong>安装方式</strong>：在技能目录下新建 <code class="inline">scidataindex-search/</code> 文件夹，把下载的 <code class="inline">SKILL.md</code> 放进去。不同工具的技能目录路径：</p>
+        <ul class="dl-list">
+          <li><strong>Codex</strong>：<code class="inline">~/.codex/skills/scidataindex-search/SKILL.md</code>（或项目级 <code class="inline">.codex/skills/</code>）</li>
+          <li><strong>Claude Code</strong>：<code class="inline">.claude/skills/scidataindex-search/SKILL.md</code></li>
+        </ul>
+        <p>其他 AI 编码工具（如 Kimi Code、Qoder 等）同样支持 SKILL.md 技能格式，将其放入各自约定的技能目录即可，具体路径请参考对应工具的文档。</p>
+        <p>技能文件内含完整的调用说明与使用策略（默认快速模式、精准模式超时设置、错误处理、API Key 获取指引），AI 助手读完即可正确使用。</p>
+        <div class="dl-meta">
+          <span>文件名：<code class="inline">SKILL.md</code></span>
+          <span>更新日期：2026-09-24</span>
+        </div>
+        <a class="action-btn dl-btn" href="downloads/SKILL.md" download>⬇ 下载 SKILL.md</a>
+      </div>
+    </section>
+
+    <!-- 请求参数 -->
+    <section class="card" id="api-params">
+      <h2>📥 请求参数</h2>
+      <table>
+        <thead>
+          <tr><th>参数</th><th>类型</th><th>必填</th><th>默认</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>query</code></td><td>string</td><td>是</td><td>—</td><td>检索需求描述（自然语言，中英文均可）</td></tr>
+          <tr><td><code>top_k</code></td><td>int</td><td>否</td><td>10</td><td>返回结果数量，上限 10</td></tr>
+          <tr><td><code>precise</code></td><td>bool</td><td>否</td><td>false</td><td>是否开启精准检索（LLM 重排 + 图推理）</td></tr>
+        </tbody>
+      </table>
+
+      <h3>两种检索模式对比</h3>
+      <table>
+        <thead>
+          <tr><th></th><th>快速模式（precise=false，默认）</th><th>精准模式（precise=true）</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>原理</td><td>纯 Embedding 向量召回</td><td>双路召回 + 概念图多跳推理 + LLM 重排</td></tr>
+          <tr><td>LLM 调用</td><td>无</td><td>2 次</td></tr>
+          <tr><td>耗时</td><td><strong>&lt;1 秒</strong></td><td>约 30-60 秒</td></tr>
+          <tr><td>graph 字段</td><td>空结构</td><td>完整候选关系图</td></tr>
+          <tr><td>score 含义</td><td>余弦相似度（0-1）</td><td>LLM 重排分数</td></tr>
+        </tbody>
+      </table>
+      <div class="note">两种模式的 score 含义不同，不可直接比较。快速模式适合快速粗排，精准模式适合需要高精度与图谱分析的场景。</div>
+    </section>
+
+    <!-- 返回结构 -->
+    <section class="card" id="api-response">
+      <h2>📤 返回结构</h2>
+      <pre id="resp">{
+  "ok": true,
+  "query": "检索需求描述",
+  "precise": false,
+  "elapsed": 0.3,
+  "results": [
+    {
+      "dataset_id": "aps/super_glue",
+      "name": "数据集显示名",
+      "category": "computer_science",
+      "score": 0.86,
+      "description": "数据集简介",
+      "source_link": "https://数据集官网/来源页",
+      "download_link": "https://数据集下载页"
+    }
+  ],
+  "graph": {
+    "nodes": [ ... ],
+    "links": [ ... ]
+  }
+}</pre>
+      <h3>字段说明</h3>
+      <table>
+        <tbody>
+          <tr><td><code>ok</code></td><td>请求是否成功</td></tr>
+          <tr><td><code>precise</code></td><td>本次检索所用模式（true 精准 / false 快速）</td></tr>
+          <tr><td><code>elapsed</code></td><td>耗时（秒）</td></tr>
+          <tr><td><code>results</code></td><td>Top-K 数据集列表，两种模式结构一致</td></tr>
+          <tr><td><code>results[].source_link</code></td><td>来源链接（官网/数据页 URL，无有效值时为空字符串）</td></tr>
+          <tr><td><code>results[].download_link</code></td><td>下载链接（无有效值时为空字符串）</td></tr>
+          <tr><td><code>graph</code></td><td>候选关系图 {nodes, links}。快速模式为空结构；精准模式含数据集与概念节点及边，可用于图谱可视化</td></tr>
+        </tbody>
+      </table>
+      <div class="tip">本接口不返回科学问题分析（analysis），以降低响应延迟与调用成本；完整分析请使用网页端「任务检索」。</div>
+    </section>
+
+    <!-- 错误响应 -->
+    <section class="card" id="api-errors">
+      <h2>⚠️ 错误响应</h2>
+      <p>统一错误格式 <code class="inline">{"detail": "错误原因"}</code>，HTTP 状态码：</p>
+      <table>
+        <thead>
+          <tr><th>状态码</th><th>含义</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>401</td><td>缺少或无效的 API Key</td><td>检查请求头 <code>Authorization: Bearer &lt;API Key&gt;</code> 是否正确</td></tr>
+          <tr><td>429</td><td>触发限流</td><td>每个 API Key 每分钟 30 次 / 全局每日 100000 次</td></tr>
+          <tr><td>422</td><td>请求体格式错误</td><td>检查 JSON 是否合法、参数类型是否正确</td></tr>
+        </tbody>
+      </table>
+      <p>业务级错误（服务内部）返回 <code class="inline">{"ok": false, "error": "具体原因"}</code>，HTTP 状态码 200。</p>
+    </section>
+
+    <!-- 使用建议 -->
+    <section class="card" id="api-tips">
+      <h2>📌 使用建议</h2>
+      <p>1. <strong>先用快速模式探路</strong>：<code class="inline">precise=false</code> 亚秒级返回，适合快速浏览候选、调试查询语句。</p>
+      <p>2. <strong>需要精度再开精准模式</strong>：<code class="inline">precise=true</code> 经过 LLM 重排与图谱推理，结果更精准，但耗时 30-60 秒，请设置足够超时。</p>
+      <p>3. <strong>遵守限流</strong>：每个 API Key 每分钟 30 次，请合理安排调用频率，避免触发 429。</p>
+      <p>4. <strong>妥善保管 API Key</strong>：API Key 即访问凭证，请勿公开张贴或写入公开代码。</p>
+    </section>
+      </div>
+    </div>
+
+    <p style="text-align:center;color:var(--text-1);font-size:13px;margin-top:8px;">
+      本 API 引用的科学数据信息均基于互联网智能搜索技术挖掘，检索与评分结果仅供参考。
+    </p>
+  </main>
+
+  <script>
+    // Tab 切换（作用域限制在各自卡片内，多组 tab 互不干扰）
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const scope = btn.closest('.card') || document;
+        const tab = btn.dataset.tab;
+        scope.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        scope.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + tab).classList.add('active');
+      });
+    });
+
+    // 复制按钮
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const target = document.getElementById(btn.dataset.copy);
+        if (!target) return;
+        // 取纯文本（去除 HTML 标签，还原 < > 实体）
+        const text = target.innerText;
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = '已复制';
+          setTimeout(() => { btn.textContent = '复制'; }, 1500);
+        } catch (e) {
+          // 降级：选中文本
+          const range = document.createRange();
+          range.selectNodeContents(target);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          btn.textContent = '请按 Ctrl+C';
+          setTimeout(() => { btn.textContent = '复制'; }, 1500);
+        }
+      });
+    });
+
+    // ---- 申请 / 查询 API Key ----
+    const BASE = location.origin;
+
+    function setMsg(el, text, cls) {
+      el.textContent = text;
+      el.className = 'form-msg' + (cls ? ' ' + cls : '');
+    }
+
+    async function postJSON(path, body) {
+      const resp = await fetch(BASE + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(data.detail || ('请求失败 (' + resp.status + ')'));
+      }
+      return data;
+    }
+
+    // 申请
+    const applyBtn = document.getElementById('apply-btn');
+    applyBtn.addEventListener('click', async () => {
+      const email = document.getElementById('apply-email').value.trim();
+      const purpose = document.getElementById('apply-purpose').value.trim();
+      const msg = document.getElementById('apply-msg');
+      if (!email) { setMsg(msg, '请填写邮箱地址', 'err'); return; }
+      applyBtn.disabled = true;
+      setMsg(msg, '提交中...');
+      try {
+        const data = await postJSON('/api/v1/keys/apply', { email, purpose });
+        setMsg(msg, data.message || '已提交', 'ok');
+      } catch (e) {
+        setMsg(msg, e.message, 'err');
+      } finally {
+        applyBtn.disabled = false;
+      }
+    });
+
+    // 查询（遮罩展示 + 复制完整 key）
+    let fullKey = '';
+    const queryBtn = document.getElementById('query-btn');
+    queryBtn.addEventListener('click', async () => {
+      const email = document.getElementById('query-email').value.trim();
+      const code = document.getElementById('query-code').value.trim();
+      const msg = document.getElementById('query-msg');
+      const resultBox = document.getElementById('key-result');
+      if (!email || !code) { setMsg(msg, '请填写邮箱和查询码', 'err'); return; }
+      queryBtn.disabled = true;
+      setMsg(msg, '查询中...');
+      resultBox.style.display = 'none';
+      try {
+        const data = await postJSON('/api/v1/keys/query', { email, query_code: code });
+        if (data.status === 'active' && data.api_key) {
+          fullKey = data.api_key;
+          const masked = fullKey.length > 12
+            ? fullKey.slice(0, 10) + '****' + fullKey.slice(-4)
+            : fullKey;
+          document.getElementById('key-masked').textContent = masked;
+          resultBox.style.display = 'flex';
+          setMsg(msg, '查询成功', 'ok');
+        } else {
+          setMsg(msg, data.message || '审核中，请耐心等待', 'ok');
+        }
+      } catch (e) {
+        setMsg(msg, e.message, 'err');
+      } finally {
+        queryBtn.disabled = false;
+      }
+    });
+
+    document.getElementById('key-copy-btn').addEventListener('click', async (e) => {
+      const btn = e.target;
+      if (!fullKey) return;
+      try {
+        await navigator.clipboard.writeText(fullKey);
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = '复制完整 Key'; }, 1500);
+      } catch (err) {
+        btn.textContent = '复制失败，请手动选择';
+        setTimeout(() => { btn.textContent = '复制完整 Key'; }, 1500);
+      }
+    });
+
+    // ---- 目录点击跳转 + 滚动高亮（页面有 <base href="/">，需拦截 # 锚点默认行为） ----
+    (function () {
+      const links = Array.from(document.querySelectorAll('.doc-toc a'));
+      const map = new Map();
+      links.forEach(a => {
+        const id = a.getAttribute('href').slice(1);
+        const el = document.getElementById(id);
+        if (el) map.set(el, a);
+        a.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          const target = document.getElementById(id);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            history.replaceState(null, '', '#' + id);
+          }
+        });
+      });
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            links.forEach(a => a.classList.remove('active'));
+            const a = map.get(e.target);
+            if (a) a.classList.add('active');
+          }
+        });
+      }, { rootMargin: '-15% 0px -70% 0px' });
+      map.forEach((_, el) => observer.observe(el));
+      if (location.hash) {
+        const el = document.getElementById(location.hash.slice(1));
+        if (el) setTimeout(() => el.scrollIntoView({ block: 'start' }), 100);
+      }
+    })();
+  </script>
+</body>
+</html>

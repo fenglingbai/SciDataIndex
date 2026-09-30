@@ -451,6 +451,26 @@
       margin-top: 14px;
     }
 
+    .results-feedback-hint {
+      margin-top: 14px;
+      font-size: 12.5px;
+      color: var(--text-1);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .results-feedback-hint a {
+      color: var(--glow);
+      text-decoration: none;
+      border-bottom: 1px dashed rgba(107, 220, 255, 0.5);
+      transition: color 0.2s;
+    }
+
+    .results-feedback-hint a:hover {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
     /* ---- 检索结果标签页 ---- */
     .task-tabs {
       display: none; /* 检索完成后才显示 */
@@ -912,8 +932,8 @@
         <a href="dataset_list.html">数据列表</a>
         <a href="task_search.html" class="active">任务检索</a>
         <a href="compare.html">数据量衡</a>
-        <a href="evaluation.html">技术说明</a>
-        <a href="about.html">关于我们</a>
+        <a href="api.html">API调用</a>
+        <a href="docs.html">技术文档</a>
       </nav>
     </div>
   </header>
@@ -964,6 +984,9 @@
       <div class="task-tab-panels" id="taskTabPanels">
         <div class="task-tab-panel active" data-panel="results">
           <div class="task-results" id="taskSearchResults"></div>
+          <div class="results-feedback-hint" id="resultsFeedbackHint" style="display:none;">
+            未找到目标数据集？<a href="docs.html#sec-feedback" target="_blank" rel="noopener noreferrer">告诉我们</a>，助力平台持续完善数据覆盖。
+          </div>
         </div>
         <div class="task-tab-panel" data-panel="graph">
           <div class="graph-wrap" id="graphWrap">
@@ -1050,6 +1073,9 @@
     // 渲染后端三阶段检索结果
     function renderBackendResults(results) {
       taskSearchResults.replaceChildren();
+      // 结果列表下方的反馈引导语：有结果时显示，无结果时隐藏
+      const feedbackHint = document.getElementById("resultsFeedbackHint");
+      if (feedbackHint) feedbackHint.style.display = results.length ? "block" : "none";
       results.forEach((item, index) => {
         const result = document.createElement("article");
         result.className = "task-result";
@@ -2517,7 +2543,7 @@
         finishProgress();
         taskSearchStatus.className = "task-status error";
         taskSearchStatus.textContent = (error.name === "AbortError")
-          ? "检索超时，请稍后重试。"
+          ? "当前检索请求较多，响应超时。可关闭「精准检索」快速出结果，或稍后重试。"
           : (error.message || "检索失败，请稍后重试。");
       } finally {
         taskSearchButton.disabled = false;

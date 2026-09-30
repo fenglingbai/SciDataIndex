@@ -11,7 +11,7 @@
 </script>
 <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SciDataIndex · 评价说明</title>
+  <title>SciDataIndex · 技术文档</title>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap");
 
@@ -312,6 +312,140 @@
       margin-bottom: 4px;
     }
 
+
+    /* ===== 文档布局：左侧目录 + 右侧内容 ===== */
+    html { scroll-behavior: smooth; }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr);
+      gap: 28px;
+      align-items: start;
+    }
+
+    .doc-toc {
+      position: sticky;
+      top: 24px;
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 16px 14px;
+      font-size: 13.5px;
+    }
+
+    .doc-toc-title {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--glow);
+      letter-spacing: 0.05em;
+    }
+
+    .doc-toc ul { list-style: none; margin: 0; padding: 0; }
+    .doc-toc li { margin: 2px 0; }
+
+    .doc-toc a {
+      display: block;
+      padding: 6px 10px;
+      border-radius: 8px;
+      color: var(--text-1);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+      line-height: 1.45;
+    }
+
+    .doc-toc a:hover { color: var(--glow); background: rgba(107, 220, 255, 0.08); }
+
+    .doc-toc a.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: rgba(46, 230, 201, 0.08);
+      font-weight: 600;
+    }
+
+    .doc-toc .toc-sub a { padding-left: 24px; font-size: 12.5px; }
+
+    .doc-content { min-width: 0; }
+
+    /* ===== 使用反馈：tab 表单 + 弹窗 ===== */
+    .fb-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .fb-tab-btn {
+      background: rgba(12, 27, 69, 0.5); color: var(--text-1);
+      border: 1px solid var(--stroke); border-radius: 9px;
+      padding: 8px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+      font-family: inherit;
+    }
+    .fb-tab-btn::after {
+      content: "▾"; margin-left: 8px; font-size: 11px; opacity: 0.6;
+      display: inline-block; transition: transform 0.2s;
+    }
+    .fb-tab-btn.active::after { transform: rotate(180deg); opacity: 1; }
+    .fb-tab-btn:hover { color: var(--glow); border-color: rgba(107, 220, 255, 0.4); }
+    .fb-tab-btn.active {
+      background: rgba(46, 230, 201, 0.15); color: var(--accent);
+      border-color: var(--accent); font-weight: 600;
+    }
+    .fb-panel { display: none; }
+    .fb-panel.active { display: block; }
+    .fb-desc { color: var(--text-1); font-size: 13.5px; line-height: 1.7; margin: 0 0 14px; }
+    .fb-field { margin-bottom: 12px; }
+    .fb-field label {
+      display: block; font-size: 13px; color: var(--text-1); margin-bottom: 6px;
+    }
+    .fb-field label .req { color: #ff8a8a; margin-left: 2px; }
+    .fb-field label .opt { color: #5a6b8c; font-size: 12px; margin-left: 6px; }
+    .fb-field input, .fb-field textarea {
+      width: 100%; box-sizing: border-box;
+      background: rgba(6, 19, 56, 0.6); color: var(--text-0);
+      border: 1px solid var(--stroke); border-radius: 9px;
+      padding: 10px 12px; font-size: 13.5px; font-family: inherit;
+      outline: none; transition: border-color 0.2s;
+    }
+    .fb-field input:focus, .fb-field textarea:focus { border-color: var(--glow); }
+    .fb-field input::placeholder, .fb-field textarea::placeholder { color: #5a6b8c; }
+    .fb-field textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
+    .fb-count { font-size: 12px; color: #5a6b8c; text-align: right; margin-top: 4px; }
+    .fb-hp { position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; overflow: hidden; }
+    .fb-submit {
+      background: rgba(46, 230, 201, 0.15); color: var(--accent);
+      border: 1px solid var(--accent); border-radius: 9px;
+      padding: 10px 26px; font-size: 13.5px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s; font-family: inherit;
+    }
+    .fb-submit:hover { background: rgba(46, 230, 201, 0.28); }
+    .fb-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .fb-msg { font-size: 13px; margin-top: 10px; min-height: 18px; color: var(--text-1); }
+    .fb-msg.err { color: #ff8a8a; }
+
+    /* 成功弹窗 */
+    .fb-modal-mask {
+      position: fixed; inset: 0; background: rgba(2, 8, 30, 0.66);
+      backdrop-filter: blur(4px); display: none;
+      align-items: center; justify-content: center; z-index: 1000;
+    }
+    .fb-modal-mask.show { display: flex; }
+    .fb-modal {
+      background: var(--card); border: 1px solid var(--stroke);
+      border-radius: 16px; padding: 28px 30px; max-width: 400px; width: calc(100% - 48px);
+      text-align: center; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      animation: fbPop 0.25s ease;
+    }
+    @keyframes fbPop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .fb-modal .fb-modal-icon { font-size: 34px; margin-bottom: 10px; }
+    .fb-modal h3 { margin: 0 0 8px; color: var(--accent); font-size: 17px; }
+    .fb-modal p { margin: 0 0 18px; color: var(--text-1); font-size: 13.5px; line-height: 1.7; }
+    .fb-modal .fb-submit { padding: 9px 30px; }
+
+    .doc-content .header { text-align: left; margin-bottom: 28px; }
+    .doc-content section[id] { scroll-margin-top: 24px; }
+    .doc-content div[id^="sec-"] { scroll-margin-top: 24px; }
+
+    @media (max-width: 980px) {
+      .doc-layout { grid-template-columns: 1fr; }
+      .doc-toc { position: static; }
+    }
+
     @media (max-width: 980px) {
       .section-body,
       .summary-grid,
@@ -337,15 +471,35 @@
         <a href="dataset_list.html">数据列表</a>
         <a href="task_search.html">任务检索</a>
         <a href="compare.html">数据量衡</a>
-        <a href="evaluation.html" class="active">技术说明</a>
-        <a href="about.html">关于我们</a>
+        <a href="api.html">API调用</a>
+        <a href="docs.html" class="active">技术文档</a>
       </nav>
     </div>
     <a class="nav-action" href="index_en.html">EN</a>
   </header>
 
   <main class="container">
-    <div class="header">
+    <div class="doc-layout">
+      <aside class="doc-toc">
+        <p class="doc-toc-title">目录</p>
+        <ul>
+          <li><a href="#sec-intro">技术简介</a></li>
+          <li><a href="#sec-evaluation">评价说明</a>
+            <ul>
+              <li class="toc-sub"><a href="#dim-openness">开放性</a></li>
+              <li class="toc-sub"><a href="#dim-quality">数据质量</a></li>
+              <li class="toc-sub"><a href="#dim-scale">数据规模</a></li>
+              <li class="toc-sub"><a href="#dim-impact">影响力</a></li>
+              <li class="toc-sub"><a href="#dim-safety">安全性</a></li>
+              <li class="toc-sub"><a href="#dim-ai">AI 就绪度</a></li>
+              <li class="toc-sub"><a href="#dim-total">综合得分</a></li>
+            </ul>
+          </li>
+          <li><a href="#sec-about">关于我们</a></li>
+        </ul>
+      </aside>
+      <div class="doc-content">
+    <div class="header" id="sec-intro">
       <h1>技术简介</h1>
       <p>技术路线图与简要说明</p>
     </div>
@@ -356,19 +510,19 @@
         <span class="section-tag">Roadmap</span>
       </div>
       <div class="roadmap-figure">
-        <img src="images/technical_approach.png" alt="技术路线图" />
+        <img src="images/SciDataIndex_Architecture.png" alt="SciDataIndex 架构图" />
       </div>
       <div class="info-block">
-        <div><strong>路线说明：</strong>SciDataIndex 采用“广域发现—智能评价—任务驱动应用”三阶段技术路线。系统首先通过跨学科广域搜索获取潜在科学数据线索，并结合科研需求筛选高质量数据资源；随后基于多维指标对数据集进行分类分级与综合评估，构建统一的数据知识库；最终通过意图解析与任务匹配技术，实现面向科学问题的数据整合与智能推荐，为科研分析与模型建模提供精准数据支撑。</div>
+        <div><strong>架构说明：</strong>SciDataIndex 架构实现：将全局上下文聚合、多维度定量评估与任务驱动的细粒度检索整合为一个具备自主代理（agentic）特性的工作流，从而将碎片化的科学数据转化为面向 AI 驱动科学研究的、可索引、可评分且可检索的评级与治理平台。</div>
       </div>
     </section>
 
-    <div class="header secondary">
+    <div class="header secondary" id="sec-evaluation">
       <h1>评价说明</h1>
       <p>六大评分维度与综合得分的评估方式</p>
     </div>
 
-    <section class="section">
+    <section class="section" id="dim-openness">
       <div class="section-title">
         <h2>开放性</h2>
         <span class="section-tag">维度 1</span>
@@ -397,7 +551,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="dim-quality">
       <div class="section-title">
         <h2>数据质量</h2>
         <span class="section-tag">维度 2</span>
@@ -427,7 +581,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="dim-scale">
       <div class="section-title">
         <h2>数据规模</h2>
         <span class="section-tag">维度 3</span>
@@ -454,7 +608,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="dim-impact">
       <div class="section-title">
         <h2>影响力</h2>
         <span class="section-tag">维度 4</span>
@@ -480,7 +634,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="dim-safety">
       <div class="section-title">
         <h2>安全性</h2>
         <span class="section-tag">维度 5</span>
@@ -512,7 +666,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="dim-ai">
       <div class="section-title">
         <h2>AI 就绪度</h2>
         <span class="section-tag">维度 6</span>
@@ -554,7 +708,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="dim-total">
       <div class="section-title">
         <h2>综合得分</h2>
         <span class="section-tag">权重汇总</span>
@@ -591,6 +745,215 @@
         </div>
       </div>
     </section>
+
+    <div class="header secondary" id="sec-about">
+      <h1>关于我们</h1>
+      <p>上海人工智能实验室 高峰科学数据基座团队</p>
+    </div>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>平台愿景</h2>
+        <span class="section-tag">Vision</span>
+      </div>
+      <div class="info-block">
+        <div>SciDataIndex 致力于构建面向科学智能时代的新一代科学数据基础设施，通过自主智能体持续汇聚全球多领域科学数据线索，建立开放、标准化、可量化的科学数据分类分级与评价体系，提升科学数据的可发现性、可评估性与可复用性。平台旨在打破数据孤岛，推动跨学科数据融合与智能发现，为科研机构、产业界与人工智能模型训练提供高质量数据支撑，促进科学数据资源向知识资产与科研生产力转化，推动开放科学与智能科研生态的持续发展。</div>
+      </div>
+    </section>
+
+    <section class="section" id="sec-feedback">
+      <div class="section-title">
+        <h2>使用反馈</h2>
+        <span class="section-tag">Feedback</span>
+      </div>
+      <div class="fb-tabs">
+        <button class="fb-tab-btn" data-fbtab="problem">问题反馈</button>
+        <button class="fb-tab-btn" data-fbtab="dataset">数据集建议</button>
+      </div>
+
+      <!-- 问题反馈 -->
+      <div class="fb-panel" id="fb-problem">
+        <p class="fb-desc">使用中遇到的任何问题、体验优化的建议，都欢迎告诉我们。我们会认真阅读每一条反馈，并持续改进平台体验。</p>
+        <div class="fb-field">
+          <label for="fb-content">反馈内容<span class="req">*</span></label>
+          <textarea id="fb-content" maxlength="500" placeholder="请描述您遇到的问题或建议（500 字以内）"></textarea>
+          <div class="fb-count"><span id="fb-count">0</span>/500</div>
+        </div>
+        <div class="fb-field">
+          <label for="fb-email">邮箱<span class="opt">选填，便于我们回复</span></label>
+          <input type="email" id="fb-email" maxlength="120" placeholder="您的邮箱地址" />
+        </div>
+        <!-- 蜜罐字段：正常用户不可见，勿填 -->
+        <div class="fb-hp" aria-hidden="true">
+          <label>网站<input type="text" id="fb-hp-problem" tabindex="-1" autocomplete="off" /></label>
+        </div>
+        <button class="fb-submit" id="fb-submit-problem">提交反馈</button>
+        <div class="fb-msg" id="fb-msg-problem"></div>
+      </div>
+
+      <!-- 数据集建议 -->
+      <div class="fb-panel" id="fb-dataset">
+        <p class="fb-desc">欢迎提供平台尚未收录的数据集线索。我们将调用智能体数据线索管线，补全该数据集的信息与知识关联。感谢您为平台建设做出的贡献。</p>
+        <div class="fb-field">
+          <label for="fb-ds-name">数据集名称<span class="req">*</span></label>
+          <input type="text" id="fb-ds-name" maxlength="200" placeholder="数据集的名称" />
+        </div>
+        <div class="fb-field">
+          <label for="fb-ds-url">数据集来源 URL<span class="req">*</span></label>
+          <input type="url" id="fb-ds-url" maxlength="500" placeholder="https://..." />
+        </div>
+        <div class="fb-field">
+          <label for="fb-ds-email">邮箱<span class="opt">选填，便于我们回复</span></label>
+          <input type="email" id="fb-ds-email" maxlength="120" placeholder="您的邮箱地址" />
+        </div>
+        <!-- 蜜罐字段：正常用户不可见，勿填 -->
+        <div class="fb-hp" aria-hidden="true">
+          <label>网站<input type="text" id="fb-hp-dataset" tabindex="-1" autocomplete="off" /></label>
+        </div>
+        <button class="fb-submit" id="fb-submit-dataset">提交建议</button>
+        <div class="fb-msg" id="fb-msg-dataset"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>联系我们</h2>
+        <span class="section-tag">Contact</span>
+      </div>
+      <div class="info-block">
+        <div><strong>邮箱：</strong><a href="mailto:zhangchi2@pjlab.org.cn" style="color: var(--glow);">zhangchi2@pjlab.org.cn</a></div>
+        <div><strong>反馈社区：</strong><a href="https://github.com/fenglingbai/SciDataIndex" target="_blank" style="color: var(--glow);">https://github.com/fenglingbai/SciDataIndex</a></div>
+        <div>如需获取 API Key 或反馈问题，欢迎通过以上邮箱与我们联系。</div>
+      </div>
+    </section>
+      </div>
+    </div>
   </main>
+
+  <!-- 反馈成功弹窗 -->
+  <div class="fb-modal-mask" id="fb-modal-mask">
+    <div class="fb-modal">
+      <div class="fb-modal-icon">🎉</div>
+      <h3>提交成功</h3>
+      <p>感谢您的反馈！您的建议对我们非常重要，<br />我们会认真对待并持续完善平台。</p>
+      <button class="fb-submit" id="fb-modal-close">好的</button>
+    </div>
+  </div>
+
+  <script>
+    // 目录点击跳转 + 滚动高亮
+    (function () {
+      const links = Array.from(document.querySelectorAll('.doc-toc a'));
+      const map = new Map();
+      links.forEach(a => {
+        const id = a.getAttribute('href').slice(1);
+        const el = document.getElementById(id);
+        if (el) map.set(el, a);
+        // 页面头部有 <base href="/">，href="#xxx" 会被解析到首页；
+        // 这里拦截点击，改为当前页内滚动。
+        a.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          const target = document.getElementById(id);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            history.replaceState(null, '', '#' + id);
+          }
+        });
+      });
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            links.forEach(a => a.classList.remove('active'));
+            const a = map.get(e.target);
+            if (a) a.classList.add('active');
+          }
+        });
+      }, { rootMargin: '-15% 0px -70% 0px' });
+      map.forEach((_, el) => observer.observe(el));
+      // 支持从其它页面带 #anchor 进来时定位（如 docs.html#sec-about）
+      if (location.hash) {
+        const el = document.getElementById(location.hash.slice(1));
+        if (el) setTimeout(() => el.scrollIntoView({ block: 'start' }), 100);
+      }
+    })();
+
+    // ---- 使用反馈：互斥手风琴（点击展开，再点收起，展开一个自动收起另一个） ----
+    document.querySelectorAll('.fb-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const panel = document.getElementById('fb-' + btn.dataset.fbtab);
+        const wasOpen = btn.classList.contains('active');
+        document.querySelectorAll('.fb-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.fb-panel').forEach(p => p.classList.remove('active'));
+        if (!wasOpen) {
+          btn.classList.add('active');
+          panel.classList.add('active');
+        }
+      });
+    });
+
+    // ---- 字数统计 ----
+    const fbContent = document.getElementById('fb-content');
+    fbContent.addEventListener('input', () => {
+      document.getElementById('fb-count').textContent = fbContent.value.length;
+    });
+
+    // ---- 成功弹窗 ----
+    const fbMask = document.getElementById('fb-modal-mask');
+    function showFbModal() { fbMask.classList.add('show'); }
+    document.getElementById('fb-modal-close').addEventListener('click', () => fbMask.classList.remove('show'));
+    fbMask.addEventListener('click', (e) => { if (e.target === fbMask) fbMask.classList.remove('show'); });
+
+    // ---- 反馈提交 ----
+    async function submitFeedback(payload, btn, msgEl, onDone) {
+      btn.disabled = true;
+      msgEl.textContent = '提交中...';
+      msgEl.className = 'fb-msg';
+      try {
+        const resp = await fetch(location.origin + '/api/v1/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(data.detail || ('提交失败 (' + resp.status + ')'));
+        msgEl.textContent = '';
+        showFbModal();
+        if (onDone) onDone();
+      } catch (e) {
+        msgEl.textContent = e.message;
+        msgEl.className = 'fb-msg err';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // 问题反馈
+    document.getElementById('fb-submit-problem').addEventListener('click', () => {
+      const content = document.getElementById('fb-content').value.trim();
+      const email = document.getElementById('fb-email').value.trim();
+      const msgEl = document.getElementById('fb-msg-problem');
+      if (!content) { msgEl.textContent = '请填写反馈内容'; msgEl.className = 'fb-msg err'; return; }
+      submitFeedback(
+        { type: 'problem', content, email, website: document.getElementById('fb-hp-problem').value },
+        document.getElementById('fb-submit-problem'), msgEl,
+        () => { document.getElementById('fb-content').value = ''; document.getElementById('fb-email').value = ''; document.getElementById('fb-count').textContent = '0'; }
+      );
+    });
+
+    // 数据集建议
+    document.getElementById('fb-submit-dataset').addEventListener('click', () => {
+      const name = document.getElementById('fb-ds-name').value.trim();
+      const url = document.getElementById('fb-ds-url').value.trim();
+      const email = document.getElementById('fb-ds-email').value.trim();
+      const msgEl = document.getElementById('fb-msg-dataset');
+      if (!name) { msgEl.textContent = '请填写数据集名称'; msgEl.className = 'fb-msg err'; return; }
+      if (!url) { msgEl.textContent = '请填写数据集来源 URL'; msgEl.className = 'fb-msg err'; return; }
+      submitFeedback(
+        { type: 'dataset', dataset_name: name, dataset_url: url, email, website: document.getElementById('fb-hp-dataset').value },
+        document.getElementById('fb-submit-dataset'), msgEl,
+        () => { document.getElementById('fb-ds-name').value = ''; document.getElementById('fb-ds-url').value = ''; document.getElementById('fb-ds-email').value = ''; }
+      );
+    });
+  </script>
 </body>
 </html>

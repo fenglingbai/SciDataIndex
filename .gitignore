@@ -115,3 +115,6 @@ data_raw/visual/plot_data.json
 
 # 演示视频（体积大,改用 GitHub user-attachments 内嵌播放,不进仓库）
 docs/readme_files/*.mp4
+
+# API Key 自助申请数据库（含用户邮箱与 key，不上传）
+web/api_keys.db

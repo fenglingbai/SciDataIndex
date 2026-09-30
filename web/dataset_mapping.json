@@ -10029,7 +10029,8 @@
     "web_name": "modENCODE",
     "web_file": "modENCODE_ratings1.json",
     "web_category": "life_science",
-    "has_web_rating": false
+    "has_web_rating": false,
+    "slug_note": "slug 占位说明：本条目内容为 modENCODE（果蝇/秀丽隐杆线虫功能基因组），slug \"encode\" 为历史归集占位，与 ENCODE（人类/小鼠功能基因组，NHGRI）不同。"
   },
   "encode-2": {
     "web_name": "ENCODE",
@@ -30153,7 +30154,8 @@
     "web_name": "NCBI Pathogen Detection",
     "web_file": "NCBI_Pathogen_Detection_ratings1.json",
     "web_category": "life_science",
-    "has_web_rating": false
+    "has_web_rating": false,
+    "slug_note": "slug 占位说明：本条目内容为 NCBI Pathogen Detection（病原体基因组），slug \"pdb\" 为历史归集占位，与 Protein Data Bank（蛋白质结构数据库）无关。"
   },
   "pdb-1aal": {
     "web_name": "RCSB Protein Data Bank Entry 1AAL",
@@ -40365,6 +40367,12 @@
     "web_name": "Wind Data Hub (WDH)",
     "web_file": "Wind_Data_Hub_(WDH)_ratings1.json",
     "web_category": "earth_science",
+    "has_web_rating": false
+  },
+  "kasthuri15-ac3ac4": {
+    "web_name": "Kasthuri15 AC3/AC4 mouse-cortex EM dataset in VAST",
+    "web_file": "Kasthuri15_AC3_AC4_mouse-cortex_EM_dataset_in_VAST_ratings1.json",
+    "web_category": "neuro_science",
     "has_web_rating": false
   }
 }

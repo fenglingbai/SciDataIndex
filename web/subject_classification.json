@@ -6725,5 +6725,6 @@
   "usgs-nwis": "earth_science",
   "vera-c-rubin-observatory": "astronomy_science",
   "wifire-data-catalog": "earth_science",
-  "wind-data-hub": "earth_science"
+  "wind-data-hub": "earth_science",
+  "kasthuri15-ac3ac4": "neuro_science"
 }
